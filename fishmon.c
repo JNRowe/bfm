@@ -23,6 +23,7 @@
 #include "include/chars.h"
 
 #include "include/bubblemon.h"
+#include "include/sys_include.h"
 
 /* *INDENT-OFF* */
 /* drawing */
@@ -43,10 +44,6 @@ void time_update(void);
 
 /* misc support functions */
 void prepare_sprites(void);
-void make_new_fishmon_dockapp(void);
-void parse_options(int argc, char **argv);
-void do_help(void);
-void do_version(void);
 
 /* global variables */
 extern BubbleMonData bm;
@@ -116,33 +113,7 @@ extern int bubble_state_change;
 /* day of week */
 /* *INDENT-ON* */
 
-void get_traffic();
-void traffic_fish_update();
-
-typedef struct
-{
-	int tx_amount;
-	int rx_amount;
-
-	// Store the last one to compare
-	int last_tx_amount;
-	int last_rx_amount;
-
-	// Actual fish speed
-	int tx_rate;
-	int rx_rate;
-
-	// Store the max for scaling, too.
-	int max_tx_diff;
-	int max_rx_diff;
-
-	// The cnt for scaling
-	int tx_cnt;
-	int rx_cnt;
-
-} traffic;
-
-traffic net_traffic;
+void traffic_fish_update(void);
 
 /* update fish, bubbles, temperature, etc */
 void fishmon_update(void)
@@ -159,7 +130,6 @@ void fishmon_update(void)
     /* update each fish position */
 	if(fish_traffic)
 	{
-		get_traffic();
 		traffic_fish_update();
 	}
 	else
@@ -426,13 +396,6 @@ void prepare_sprites(void)
 
     bm.weeds[1].where = 42;
     bm.weeds[1].frame = rand() % 7;
-
-#define DIFF_MIN 10
-	if(fish_traffic)
-	{
-		net_traffic.max_rx_diff = DIFF_MIN;
-		net_traffic.max_tx_diff = DIFF_MIN;
-	}
 
 }
 
@@ -722,166 +685,30 @@ void putpixel(int x, int y, float i, int linewidth, int color)
     }
 }
 
-// Pigeon
-// A lot of hard coded... hopefully for now only...
-
-
-#define NET_DEVICE		"eth0"
-#define FISH_MAX_SPEED	8
-
-char buffer[256];
-
-void get_traffic()
-{
-	FILE *dev;
-
-	int diff;
-
-	if((dev = fopen("/proc/net/dev", "r")) == NULL)
-	{
-		// Cannot use that... hmm different system?
-		fish_traffic = 0;
-	}
-	else
-	{
-		// Here we go...
-
-		// Don't care about the first 2 lines
-		fgets(buffer, 256, dev);
-		fgets(buffer, 256, dev);
-
-		while(fgets(buffer, 256, dev))
-		{
-			char name[256];
-			//printf("%s\n", buffer);
-			// I love sscanf! :)
-			sscanf(buffer, "%*[ ]%[^:]:%*d %d %*d %*d %*d %*d %*d %*d %*d %d %*d %*d %*d %*d %*d %*d", name, &net_traffic.rx_amount, &net_traffic.tx_amount);
-			//printf("%s/%d/%d\n", name, net_traffic.tx_amount, net_traffic.rx_amount);
-
-			if(!strcmp(name, NET_DEVICE))
-			{
-				//printf("%d\n", net_traffic.rx_amount);
-
-				if(net_traffic.rx_amount != net_traffic.last_rx_amount)
-				{
-					if(net_traffic.last_rx_amount == 0)
-					{
-						net_traffic.last_rx_amount = net_traffic.rx_amount;
-					}
-
-					diff = net_traffic.rx_amount - net_traffic.last_rx_amount;
-					net_traffic.last_rx_amount = net_traffic.rx_amount;
-					net_traffic.rx_rate = FISH_MAX_SPEED * diff / net_traffic.max_rx_diff;
-					if(net_traffic.rx_rate == 0)
-					{
-						// At least, make it move a bit, cos we know there's
-						// traffic
-						net_traffic.rx_rate = 1;
-					}
-
-					// Do something to max rate, to do proper (hopefully)
-					// scaling
-					if(net_traffic.max_rx_diff < diff)
-					{
-						net_traffic.max_rx_diff = diff;
-					}
-					else
-					{
-						// Slowly lower the scale
-						if(++net_traffic.rx_cnt > 5)
-						{
-							net_traffic.max_rx_diff = diff;
-							if(net_traffic.max_rx_diff < DIFF_MIN)
-							{
-								// And don't scale it too low
-								net_traffic.max_rx_diff = DIFF_MIN;
-							}
-							net_traffic.rx_cnt = 0;
-						}
-					}
-				}
-				else
-				{
-					net_traffic.rx_rate = 0;
-				}
-
-				//printf("%d\n", net_traffic.tx_amount);
-
-				if(net_traffic.tx_amount != net_traffic.last_tx_amount)
-				{
-					if(net_traffic.last_tx_amount == 0)
-					{
-						net_traffic.last_tx_amount = net_traffic.tx_amount;
-					}
-					diff = net_traffic.tx_amount - net_traffic.last_tx_amount;
-					net_traffic.last_tx_amount = net_traffic.tx_amount;
-					net_traffic.tx_rate = FISH_MAX_SPEED * diff / net_traffic.max_tx_diff;
-					if(net_traffic.tx_rate == 0)
-					{
-						// At least, make it move a bit, cos we know there's
-						// traffic
-						net_traffic.tx_rate = 1;
-					}
-					
-					// Do something to max rate, to do proper (hopefully)
-					// scaling
-					if(net_traffic.max_tx_diff < diff)
-					{
-						net_traffic.max_tx_diff = diff;
-					}
-					else
-					{
-						// Slowly lower the scale
-						if(++net_traffic.tx_cnt > 5)
-						{
-							net_traffic.max_tx_diff = diff;
-							if(net_traffic.max_tx_diff < DIFF_MIN)
-							{
-								// And don't scale it too low
-								net_traffic.max_tx_diff = DIFF_MIN;
-							}
-							net_traffic.tx_cnt = 0;
-						}
-					}
-				}
-				else
-				{
-					net_traffic.tx_rate = 0;
-				}
-
-			}
-
-		}
-
-	}
-	fclose(dev);
-
-}
 
 void traffic_fish_update()
 {
     int i, j;
     int min_y;
 
-    for (i = 0; i < NRFISH; i++) {
+	int rx_speed = net_rx_speed();
+	int tx_speed = net_tx_speed();
 
-
-	/* frozen fish doesn't need to be handled, or drawn */
-	if (bm.fishes[i].speed == 0 && net_traffic.rx_rate == 0 && net_traffic.tx_rate == 0)
-	    continue;
-
-		//printf("%d %d %d %d [%d %d]\n", bm.fishes[i].tx, bm.fishes[i].y, net_traffic.tx_rate, net_traffic.rx_rate, net_traffic.max_tx_diff, net_traffic.max_rx_diff);
+    for (i = 0; i < NRFISH; i++)
+	{
+		// No traffic, do nothing
+		if (bm.fishes[i].speed == 0 && rx_speed == 0 && tx_speed == 0)
+		{
+			continue;
+		}
 
 		if(i < (NRFISH / 2))
 		{
 			// tx traffic
 			if(bm.fishes[i].tx < XMAX)
 			{
-				if(bm.fishes[i].speed < net_traffic.tx_rate)
+				if(bm.fishes[i].speed < tx_speed)
 				{
-					// Let's accelerate!
-					//bm.fishes[i].speed = net_traffic.tx_rate;
-
 					// Slowly accelerate
 					bm.fishes[i].speed += 1;
 				}
@@ -893,14 +720,14 @@ void traffic_fish_update()
 				// Done once, go back
 				bm.fishes[i].tx = -18 - rand() % XMAX;
 				bm.fishes[i].y = (rand() % (YMAX - 14));
-				if(net_traffic.tx_rate == 0)
+				if(tx_speed == 0)
 				{
 					// Stop the fish when it's at the end...
 					bm.fishes[i].speed = 0;
 				}
 				else
 				{
-					bm.fishes[i].speed = net_traffic.tx_rate;
+					bm.fishes[i].speed = tx_speed;
 				}
 			}
 		}
@@ -909,11 +736,8 @@ void traffic_fish_update()
 			// rx traffic
 			if(bm.fishes[i].tx > -18)
 			{
-				if(bm.fishes[i].speed < net_traffic.rx_rate)
+				if(bm.fishes[i].speed < rx_speed)
 				{
-					// Let's accelerate!
-					//bm.fishes[i].speed = net_traffic.rx_rate;
-
 					// Slowly accelerate
 					bm.fishes[i].speed += 1;
 				}
@@ -924,14 +748,14 @@ void traffic_fish_update()
 				// Done once, go back
 				bm.fishes[i].tx = XMAX + rand() % XMAX;
 				bm.fishes[i].y = (rand() % (YMAX - 14));
-				if(net_traffic.rx_rate == 0)
+				if(rx_speed == 0)
 				{
 					// Stop the fish when it's at the end...
 					bm.fishes[i].speed = 0;
 				}
 				else
 				{
-					bm.fishes[i].speed = net_traffic.rx_rate;
+					bm.fishes[i].speed = rx_speed;
 					bm.fishes[i].tx -= bm.fishes[i].speed;
 				}
 			}

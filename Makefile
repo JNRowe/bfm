@@ -11,7 +11,7 @@ PREFIX = /usr/local
 # no user serviceable parts below
 EXTRA += $(WMAN)
 # optimization cflags
-CFLAGS = -g -Wall `gtk-config --cflags` ${EXTRA}
+CFLAGS = -O3 -Wall `gtk-config --cflags` ${EXTRA}
 # profiling cflags
 # CFLAGS = -ansi -Wall -pg -O3 `gtk-config --cflags` ${EXTRA} -DPRO
 # test coverage cflags

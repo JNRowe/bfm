@@ -28,4 +28,9 @@ int system_memory(void);	/* set memory related values in BubbleMonData
 void system_loadavg(void);	/* get current load average and put into
 				   bm->loadavg[].{i,f} */
 #endif
+
+#ifdef ENABLE_FISH
+int net_tx_speed(void);		/* Current fish speed for outgoing traffic */
+int net_rx_speed(void);		/* Current fish speed for incoming traffic */
+#endif
 #endif /* _SYS_INCLUDE_H_ */
