@@ -32,7 +32,6 @@ void draw_sprite(int x, int y, int idx);
 void draw_sprite_alpha(int x, int y, int idx, int alpha);
 void draw_string(int dx, int dy, char *string);
 void draw_ascii(int x, int y, char digit);
-void anti_line(int x1, int y1, int x2, int y2, int linewidth, int color);
 void putpixel(int x, int y, float i, int linewidth, int color);
 
 /* stuff */
@@ -40,7 +39,11 @@ void fishmon_update(void);
 void bubble_update(void);
 void fish_update(void);
 void weed_update(void);
+
+#ifdef ENABLE_TIME
 void time_update(void);
+void anti_line(int x1, int y1, int x2, int y2, int linewidth, int color);
+#endif
 
 /* misc support functions */
 void prepare_sprites(void);
@@ -49,6 +52,7 @@ void prepare_sprites(void);
 extern BubbleMonData bm;
 extern int real_waterlevel_max;
 extern int fish_traffic;
+extern int time_enabled;
 
 /* 34 sprites:
  * 0, 2, 4, 6, 8, 10, 12, 14 - fish left
@@ -137,7 +141,6 @@ void fishmon_update(void)
 		fish_update();
 	}
 
-
     /* done with sprites - now draw colormap-based image */
     draw_cmap_image(); 
 
@@ -147,8 +150,14 @@ void fishmon_update(void)
     /* draw thermometer 80 - alpha 
     draw_sprite_alpha(49, 20, 31, 80); */
 
+#ifdef ENABLE_TIME
     /* update clock face */
-/*    time_update(); */
+        if(time_enabled)
+	{
+	    time_update();
+	}
+#endif
+
 }				/* fishmon_update */
 
 
@@ -416,9 +425,10 @@ void draw_cmap_image(void)
 	    int pos = i * 3;
 	    bm.rgb_buf[pos++] = THE_CMAP[cmap][0];
 	    bm.rgb_buf[pos++] = THE_CMAP[cmap][1];
-// Pigeon
-// Looks nicer without this :)
-//	    bm.rgb_buf[pos] = THE_CMAP[cmap][2];
+/*
+ * Looks nicer without this :)
+		bm.rgb_buf[pos] = THE_CMAP[cmap][2];
+ */
 	}
     }
 }
@@ -578,85 +588,6 @@ void draw_ascii(int dx, int dy, char digit)
     }
 }
 
-/* draw antialiased line from (x1, y1) to (x2, y2), with width linewidth
- * color is an int like 0xRRGGBB */
-void anti_line(int x1, int y1, int x2, int y2, int linewidth, int color)
-{
-    int dx = abs(x1 - x2); 
-    int dy = abs(y1 - y2);
-    int error, sign, tmp;
-    float ipix;
-    int step = linewidth;
-
-    if (dx >= dy) {
-	if (x1 > x2) {
-	    tmp = x1;
-	    x1 = x2;
-	    x2 = tmp;
-	    tmp = y1;
-	    y1 = y2;
-	    y2 = tmp;
-	}
-	error = dx / 2;
-	if (y2 > y1)
-	    sign = step;
-	else
-	    sign = -step;
-
-	putpixel(x1, y1, 1, linewidth, color);
-
-	while (x1 < x2) {
-	    if ((error -= dy) < 0) {
-		y1 += sign;
-		error += dx;
-	    }
-	    x1 += step;
-	    ipix = (float)error / dx;
-
-	    if (sign == step)
-		ipix = 1 - ipix;
-
-	    putpixel(x1, y1, 1, linewidth, color);
-	    putpixel(x1, y1 - step, (1 - ipix), linewidth, color);
-	    putpixel(x1, y1 + step, ipix, linewidth, color);
-	}
-	putpixel(x2, y2, 1, linewidth, color);
-    } else {
-	if (y1 > y2) {
-	    tmp = x1;
-	    x1 = x2;
-	    x2 = tmp;
-	    tmp = y1;
-	    y1 = y2;
-	    y2 = tmp;
-	}
-	error = dy / 2;
-
-	if (x2 > x1)
-	    sign = step;
-	else
-	    sign = -step;
-
-	putpixel(x1, y1, 1, linewidth, color);
-
-	while (y1 < y2) {
-	    if ((error -= dx) < 0) {
-		x1 += sign;
-		error += dy;
-	    }
-	    y1 += step;
-	    ipix = (float)error / dy;
-	    
-	    if (sign == step)
-		ipix = 1 - ipix;
-
-	    putpixel(x1 ,y1, 1, linewidth, color);
-	    putpixel(x1 - step, y1, (1 - ipix), linewidth, color);
-	    putpixel(x1 + step, y1, ipix, linewidth, color);
-	}
-	putpixel(x2, y2, 1, linewidth, color);
-    }
-}
 
 /* put alpha-blended pixel on the backbuffer.  Uses floats, could be
  * optimized, probably */
@@ -797,4 +728,158 @@ void traffic_fish_update()
 
 }
 
+#ifdef ENABLE_TIME
+void time_update(void)
+{
+    struct tm *data;
+    time_t cur_time;
+    static time_t old_time;
+
+    int hr, min, sec;
+    static int osec = -1;
+    static int oday = -1;
+    static int hdx, hdy, mdx, mdy, sdx, sdy;
+
+    double psi;
+
+    cur_time = time(NULL);
+
+    if (cur_time != old_time) {
+	old_time = cur_time;
+
+	data = localtime(&cur_time);
+
+	hr = data->tm_hour % 12;
+	min = data->tm_min;
+	sec = data->tm_sec;
+
+	/* hours */
+	if ((sec % 15) == 0) {
+	    psi = hr * (M_PI / 6.0);
+	    psi += min * (M_PI / 360);
+	    hdx = floor(sin(psi) * 26 * 0.55) + 28;
+	    hdy = floor(-cos(psi) * 22 * 0.55) + 24;
+	}
+
+	/* minutes */
+	if ((sec % 15) == 0) {
+	    psi = min * (M_PI / 30.0);
+	    psi += sec * (M_PI / 1800);
+	    mdx = floor(sin(psi) * 26 * 0.7) + 28;
+	    mdy = floor(-cos(psi) * 22 * 0.7) + 24;
+	}
+	
+	/* seconds */
+	if (osec != sec) {
+	    psi = sec * (M_PI / 30.0);
+	    sdx = floor(sin(psi) * 26 * 0.9) + 28;
+	    sdy = floor(-cos(psi) * 22 * 0.9) + 24;
+	    osec = sec;
+	}
+
+	/* see if we need to redraw the day/month/weekday deal */
+	if (data->tm_mday != oday) {
+	    oday = data->tm_mday;
+	    /* redundant calculation for a reason */
+	    psi = hr * (M_PI / 6.0);
+	    psi += min * (M_PI / 360);
+	    hdx = floor(sin(psi) * 26 * 0.55) + 28;
+	    hdy = floor(-cos(psi) * 22 * 0.55) + 24;
+	    psi = min * (M_PI / 30.0);
+	    psi += sec * (M_PI / 1800);
+	    mdx = floor(sin(psi) * 26 * 0.7) + 28;
+	    mdy = floor(-cos(psi) * 22 * 0.7) + 24;
+
+	    /* reflash the backbuffer / date / weekday */
+	    // prepare_backbuffer(0);
+	}
+    }
+
+    /* must redraw each frame */
+    anti_line(28, 24, mdx, mdy, 1, 0xeeeeee);
+    anti_line(28, 24, hdx, hdy, 1, 0xbf0000);
+    anti_line(28, 24, sdx, sdy, 1, 0xc79f2b);
+
+}
+
+/* draw antialiased line from (x1, y1) to (x2, y2), with width linewidth
+ * color is an int like 0xRRGGBB */
+void anti_line(int x1, int y1, int x2, int y2, int linewidth, int color)
+{
+    int dx = abs(x1 - x2); 
+    int dy = abs(y1 - y2);
+    int error, sign, tmp;
+    float ipix;
+    int step = linewidth;
+
+    if (dx >= dy) {
+	if (x1 > x2) {
+	    tmp = x1;
+	    x1 = x2;
+	    x2 = tmp;
+	    tmp = y1;
+	    y1 = y2;
+	    y2 = tmp;
+	}
+	error = dx / 2;
+	if (y2 > y1)
+	    sign = step;
+	else
+	    sign = -step;
+
+	putpixel(x1, y1, 1, linewidth, color);
+
+	while (x1 < x2) {
+	    if ((error -= dy) < 0) {
+		y1 += sign;
+		error += dx;
+	    }
+	    x1 += step;
+	    ipix = (float)error / dx;
+
+	    if (sign == step)
+		ipix = 1 - ipix;
+
+	    putpixel(x1, y1, 1, linewidth, color);
+	    putpixel(x1, y1 - step, (1 - ipix), linewidth, color);
+	    putpixel(x1, y1 + step, ipix, linewidth, color);
+	}
+	putpixel(x2, y2, 1, linewidth, color);
+    } else {
+	if (y1 > y2) {
+	    tmp = x1;
+	    x1 = x2;
+	    x2 = tmp;
+	    tmp = y1;
+	    y1 = y2;
+	    y2 = tmp;
+	}
+	error = dy / 2;
+
+	if (x2 > x1)
+	    sign = step;
+	else
+	    sign = -step;
+
+	putpixel(x1, y1, 1, linewidth, color);
+
+	while (y1 < y2) {
+	    if ((error -= dx) < 0) {
+		x1 += sign;
+		error += dy;
+	    }
+	    y1 += step;
+	    ipix = (float)error / dy;
+	    
+	    if (sign == step)
+		ipix = 1 - ipix;
+
+	    putpixel(x1 ,y1, 1, linewidth, color);
+	    putpixel(x1 - step, y1, (1 - ipix), linewidth, color);
+	    putpixel(x1 + step, y1, ipix, linewidth, color);
+	}
+	putpixel(x2, y2, 1, linewidth, color);
+    }
+}
+#endif
 

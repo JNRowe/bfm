@@ -1,3 +1,35 @@
+/*
+ * bubblefishymon 0.4
+ *
+ * Well, Hacks from bubblemon by timecop and Johan
+ *
+ * http://www.student.nada.kth.se/~d92-jwa/code/
+ * http://www.ne.jp/asahi/linux/timecop/
+ *
+ * Basically putting timecop's bubblemon and wmfishtime together.
+ *
+ *
+ * 0.4 2001/11/20
+ *  - Added -t for time.
+ *  - Changed a bit of the color of the clock's hands.
+ *  - The code is still in a very "hacking" state. Not clean. Not good.
+ *    Will be better :)
+ *
+ * 0.3 2001/07/16
+ *  - Code tidying, fixes, etc.
+ *
+ * 0.2
+ *  - Added -n for fishy network traffic
+ *
+ * 0.1
+ *  - Got fish!
+ *
+ *
+ * Pigeon (pigeon@pigeond.net)
+ * http://pigeond.net/
+ *
+ */
+
 /*  BubbleMon dockapp 1.32
  *
  *  - dockapp for Window Maker/Blackbox/E/Afterstep/SawBabble
@@ -123,6 +155,10 @@ int duck_enabled = 1;
 #ifdef ENABLE_FISH
 int fish_enabled = 1;
 int fish_traffic = 0;
+#endif
+
+#ifdef ENABLE_TIME
+int time_enabled = 0;
 #endif
 
 #ifdef UPSIDE_DOWN_DUCK
@@ -265,7 +301,7 @@ static void bubblemon_session_defaults(void)
 static void print_usage(void)
 {
     printf( "BubbleMon version "VERSION", features: %s\n"
-	    "Usage: bubblemon [switches] [program_1] [program_2]\n\n"
+	    "Usage: bubblefishymon [switches] [program_1] [program_2]\n\n"
 	    "Disable compiled-in features\n"
 #ifdef ENABLE_DUCK
 	    " -d\tdisable swimming duck\n"
@@ -289,6 +325,9 @@ static void print_usage(void)
 #endif
 #ifdef ENABLE_FISH
 	    " -n\tfish represents network traffic\n"
+#endif
+#ifdef ENABLE_TIME
+	    " -t\tdraw the clock too\n"
 #endif
 	    " -h\tdisplay this help\n",
 	    options /* this is the global static string with compiled features */
@@ -347,6 +386,10 @@ int main(int argc, char **argv)
     strcat(options, "FISH ");
     strcat(execute, "f");
     strcat(execute, "n");
+#endif
+#ifdef ENABLE_TIME
+    strcat(options, "TIME ");
+    strcat(execute, "t");
 #endif
 
     /* command line options */
@@ -416,6 +459,11 @@ int main(int argc, char **argv)
 	    fish_traffic = 1;
 	    break;
 #endif
+#ifdef ENABLE_TIME
+	case 't':
+	    time_enabled = 1;
+	    break;
+#endif
 	default:
 	    print_usage();
 	    exit(-1);
@@ -440,7 +488,6 @@ int main(int argc, char **argv)
     /* create dockapp window. creates windows, allocates memory, etc */
     make_new_bubblemon_dockapp();
 
-// Pigeon
 #ifdef ENABLE_FISH
     if(fish_enabled)
     {
@@ -600,8 +647,8 @@ static void make_new_bubblemon_dockapp(void)
     attr.wclass = GDK_INPUT_OUTPUT;
     attr.visual = gdk_visual_get_system();
     attr.colormap = gdk_colormap_get_system();
-    attr.wmclass_name = "bubblemon";
-    attr.wmclass_class = "bubblemon";
+    attr.wmclass_name = "bubblefishymon";
+    attr.wmclass_class = "bubblefishymon";
     attr.window_type = GDK_WINDOW_TOPLEVEL;
 
     sizehints.flags = USSize;
@@ -616,13 +663,13 @@ static void make_new_bubblemon_dockapp(void)
 
     attri.width = 64;
     attri.height = 64;
-    attri.title = "bubblemon";
+    attri.title = "bubblefishymon";
     attri.event_mask = MASK;
     attri.wclass = GDK_INPUT_OUTPUT;
     attri.visual = gdk_visual_get_system();
     attri.colormap = gdk_colormap_get_system();
-    attri.wmclass_name = "bubblemon";
-    attri.wmclass_class = "bubblemon";
+    attri.wmclass_name = "bubblefishymon";
+    attri.wmclass_class = "bubblefishymon";
     attri.window_type = GDK_WINDOW_TOPLEVEL;
 
     bm.iconwin = gdk_window_new(bm.win, &attri,
@@ -977,7 +1024,6 @@ static void bubblemon_update(int proximity)
     }
 #endif
 
-// Pigeon
 #ifdef ENABLE_FISH
 	if(fish_enabled)
 	{
