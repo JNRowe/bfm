@@ -29,7 +29,7 @@
 #define THE_DATA header_data
 
 /* how many fishes? */
-#define NRFISH 4
+#define NRFISH 6
 #define MAXBUBBLE 32
 
 /* main structure holding all sprites used in this dockapp */
@@ -67,30 +67,4 @@ typedef struct {
     int frame;			/* current frame type */
 } Bubble;
 
-/* main dockapp info structure.  windows, buffers, etc */
-typedef struct {
-    Display *display;		/* X11 display */
-    GdkWindow *win;		/* main window */
-    GdkWindow *iconwin;		/* icon window */
-    GdkGC *gc;			/* drawing GC */
-    GdkPixmap *pixmap;		/* main dockapp pixmap */
-    GdkBitmap *mask;		/* dockapp mask */
-
-    Fish fishes[NRFISH];	/* fishes */
-	/* Pigeon */
-    Weed weeds[2];		/* 2 weeds */
-
-    Bubble bubbles[MAXBUBBLE];	/* bubbles */
-    int nr_bubbles;		/* current bubble count */
-
-    /* main image buffer */
-    unsigned char rgb[RGBSIZE];
-
-    /* cmap based buffer for sprites, etc - notice not RGB buffer */
-    unsigned char image[CMAPSIZE];
-
-    /* back buffer - stores things we dont want to redraw all the time */
-    unsigned char bgr[RGBSIZE];
-
-} FishMonData;
 #endif				/* _FISHMON_H_ */

@@ -141,15 +141,15 @@ typedef struct {
     unsigned int history[53];
     unsigned int hisadd;
 
+ #ifdef ENABLE_FISH
     Fish fishes[NRFISH];	/* fishes */
-    Weed weeds[3];		/* 3 weeds */
+    Weed weeds[2];		/* 3 weeds */
 
     int nr_bubbles;		/* current bubble count */
 
     /* cmap based buffer for sprites, etc - notice not RGB buffer */
     unsigned char image[CMAPSIZE];
 
-    /* back buffer - stores things we dont want to redraw all the time */
-    unsigned char bgr[RGBSIZE];
+#endif
 } BubbleMonData;
 #endif				/* _BUBBLEMON_H_ */

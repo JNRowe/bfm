@@ -119,7 +119,12 @@ char options[1024];
 
 #ifdef ENABLE_DUCK
 int duck_enabled = 1;
+
+#ifdef ENABLE_FISH
 int fish_enabled = 1;
+int fish_traffic = 0;
+#endif
+
 #ifdef UPSIDE_DOWN_DUCK
 int upside_down_duck_enabled = 1;
 #endif				/* UPSIDE_DOWN_DUCK */
@@ -268,6 +273,9 @@ static void print_usage(void)
 	    " -u\tdisable upside-down duck\n"
 #endif /* UPSIDE_DOWN_DUCK */
 #endif /* ENABLE_DUCK */
+#ifdef ENABLE_FISH
+	    " -f\tdisable fish\n"
+#endif
 #ifdef ENABLE_CPU
 	    " -c\tdisable CPU meter\n"
 #endif /* ENABLE_CPU */
@@ -278,6 +286,9 @@ static void print_usage(void)
 #ifdef ENABLE_MEMSCREEN
 	    " -p\tuse alternative color scheme in memory info screen\n"
 	    " -k\tdisplay memory and swap statistics in megabytes\n"
+#endif
+#ifdef ENABLE_FISH
+	    " -n\tfish represents network traffic\n"
 #endif
 	    " -h\tdisplay this help\n",
 	    options /* this is the global static string with compiled features */
@@ -332,6 +343,11 @@ int main(int argc, char **argv)
     strcat(options, "MEMSCREEN ");
     strcat(execute, "pmk");
 #endif				/* ENABLE_MEMSCREEN */
+#ifdef ENABLE_FISH
+    strcat(options, "FISH ");
+    strcat(execute, "f");
+    strcat(execute, "n");
+#endif
 
     /* command line options */
     while ((ch = getopt(argc, argv, execute)) != -1) {
@@ -391,6 +407,15 @@ int main(int argc, char **argv)
 	    memscreen_megabytes = 1;
 	    break;
 #endif				/* ENABLE_MEMSCREEN */
+
+#ifdef ENABLE_FISH
+	case 'f':
+	    fish_enabled = 0;
+	    break;
+	case 'n':
+	    fish_traffic = 1;
+	    break;
+#endif
 	default:
 	    print_usage();
 	    exit(-1);

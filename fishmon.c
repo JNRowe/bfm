@@ -18,7 +18,6 @@
 #include <gdk/gdkx.h>
 #include <X11/Xresource.h>
 
-#include "include/master.xpm"
 #include "include/sprites.h"
 #include "include/fishmon.h"
 #include "include/chars.h"
@@ -43,22 +42,16 @@ void weed_update(void);
 void time_update(void);
 
 /* misc support functions */
-void prepare_backbuffer(int solid);
 void prepare_sprites(void);
 void make_new_fishmon_dockapp(void);
 void parse_options(int argc, char **argv);
 void do_help(void);
 void do_version(void);
 
-/* mail stuff */
-void check_mail(void);
-
 /* global variables */
 extern BubbleMonData bm;
 extern int real_waterlevel_max;
-int enable_check_mail = 0;	/* no mail check for default !!!  */
-int new_mail = 0;		/* no new mail for default !!!    */
-int broken_wm = 0;		/* need broken windowmanager fix? */
+extern int fish_traffic;
 
 /* 34 sprites:
  * 0, 2, 4, 6, 8, 10, 12, 14 - fish left
@@ -118,21 +111,42 @@ int turn_animation[8] = { 6, 8, 7, 1,    7, 9, 6, 0 };
 /* "x offset" sequence for bubbles moving upward */
 int bubble_sequence[5] = { -2, -2, -1, 0, 0 };
 /* keeps track of mouse focus */
-int proximity;
 /* keeps track of distance between bubble state changes (depends on YMAX) */
 extern int bubble_state_change;
 /* day of week */
-char weekday[8][3] = { "SU", "MO", "TU", "WE", "TH", "FR", "SA" };
-/* month */
-char month[12][4] = { "JAN", "FEB", "MAR", "APR", "MAY", "JUN",
-    			   "JUL", "AUG", "SEP", "OCT", "NOV", "DEC" };
 /* *INDENT-ON* */
 
+void get_traffic();
+void traffic_fish_update();
+
+typedef struct
+{
+	int tx_amount;
+	int rx_amount;
+
+	// Store the last one to compare
+	int last_tx_amount;
+	int last_rx_amount;
+
+	// Actual fish speed
+	int tx_rate;
+	int rx_rate;
+
+	// Store the max for scaling, too.
+	int max_tx_diff;
+	int max_rx_diff;
+
+	// The cnt for scaling
+	int tx_cnt;
+	int rx_cnt;
+
+} traffic;
+
+traffic net_traffic;
 
 /* update fish, bubbles, temperature, etc */
 void fishmon_update(void)
 {
-//    memcpy(&bm.rgb_buf, &bm.bgr, RGBSIZE);
     memset(&bm.image, 0, CMAPSIZE);
 
     /* check for new mail if enabled and no new mail exists */
@@ -143,7 +157,16 @@ void fishmon_update(void)
     weed_update();
 
     /* update each fish position */
-    fish_update();
+	if(fish_traffic)
+	{
+		get_traffic();
+		traffic_fish_update();
+	}
+	else
+	{
+		fish_update();
+	}
+
 
     /* done with sprites - now draw colormap-based image */
     draw_cmap_image(); 
@@ -158,78 +181,6 @@ void fishmon_update(void)
 /*    time_update(); */
 }				/* fishmon_update */
 
-void time_update(void)
-{
-    struct tm *data;
-    time_t cur_time;
-    static time_t old_time;
-
-    int hr, min, sec;
-    static int osec = -1;
-    static int oday = -1;
-    static int hdx, hdy, mdx, mdy, sdx, sdy;
-
-    double psi;
-
-    cur_time = time(NULL);
-
-    if (cur_time != old_time) {
-	old_time = cur_time;
-
-	data = localtime(&cur_time);
-
-	hr = data->tm_hour % 12;
-	min = data->tm_min;
-	sec = data->tm_sec;
-
-	/* hours */
-	if ((sec % 15) == 0) {
-	    psi = hr * (M_PI / 6.0);
-	    psi += min * (M_PI / 360);
-	    hdx = floor(sin(psi) * 26 * 0.55) + 28;
-	    hdy = floor(-cos(psi) * 22 * 0.55) + 24;
-	}
-
-	/* minutes */
-	if ((sec % 15) == 0) {
-	    psi = min * (M_PI / 30.0);
-	    psi += sec * (M_PI / 1800);
-	    mdx = floor(sin(psi) * 26 * 0.7) + 28;
-	    mdy = floor(-cos(psi) * 22 * 0.7) + 24;
-	}
-	
-	/* seconds */
-	if (osec != sec) {
-	    psi = sec * (M_PI / 30.0);
-	    sdx = floor(sin(psi) * 26 * 0.9) + 28;
-	    sdy = floor(-cos(psi) * 22 * 0.9) + 24;
-	    osec = sec;
-	}
-
-	/* see if we need to redraw the day/month/weekday deal */
-	if (data->tm_mday != oday) {
-	    oday = data->tm_mday;
-	    /* redundant calculation for a reason */
-	    psi = hr * (M_PI / 6.0);
-	    psi += min * (M_PI / 360);
-	    hdx = floor(sin(psi) * 26 * 0.55) + 28;
-	    hdy = floor(-cos(psi) * 22 * 0.55) + 24;
-	    psi = min * (M_PI / 30.0);
-	    psi += sec * (M_PI / 1800);
-	    mdx = floor(sin(psi) * 26 * 0.7) + 28;
-	    mdy = floor(-cos(psi) * 22 * 0.7) + 24;
-
-	    /* reflash the backbuffer / date / weekday */
-	    prepare_backbuffer(0);
-	}
-    }
-
-    /* must redraw each frame */
-    anti_line(28, 24, hdx, hdy, 1, 0xbf0000);
-    anti_line(28, 24, mdx, mdy, 1, 0x00aa00);
-    anti_line(28, 24, sdx, sdy, 1, 0xc79f2b);
-
-}
 
 void weed_update(void)
 {
@@ -317,8 +268,7 @@ void fish_update(void)
 	/* randomly make fish change direction mid-way
 	 * but only if it isn't turning already and if it isn't
 	 * scared */
-	if (((rand() % 255) == 128) && (bm.fishes[i].turn != 1) &&
-		!proximity) {
+	if (((rand() % 255) == 128) && (bm.fishes[i].turn != 1)) {
 	    bm.fishes[i].turn = 1;
 	    bm.fishes[i].frame = 0;
 	    bm.fishes[i].speed = 1;
@@ -335,7 +285,7 @@ void fish_update(void)
 		bm.fishes[i].tx = -18 - bm.fishes[i].travel;
 		bm.fishes[i].rev = 1;
 		bm.fishes[i].y = rand() % (YMAX - 14);
-		bm.fishes[i].speed = proximity ? 0 : (rand() % 2) + 1;
+		bm.fishes[i].speed = (rand() % 2) + 1;
 	    }
 	} else {
 	    bm.fishes[i].tx += bm.fishes[i].speed;
@@ -346,7 +296,7 @@ void fish_update(void)
 		bm.fishes[i].tx = XMAX + bm.fishes[i].travel;
 		bm.fishes[i].rev = 0;
 		bm.fishes[i].y = rand() % (YMAX - 14);
-		bm.fishes[i].speed = proximity ? 0 : (rand() % 2) + 1;
+		bm.fishes[i].speed = (rand() % 2) + 1;
 	    }
 	}
 
@@ -413,66 +363,6 @@ void fish_update(void)
     }
 }
 
-void prepare_backbuffer(int solid)
-{
-    int i;
-    int j;
-    double psi;
-    int dx, dy;
-    int idx;
-    time_t curr_time;
-    struct tm *data;
-    char buffer[10];
-
-    /* draw the water -> deep water gradient */
-    for (i = 0; i < YMAX; i++) {
-	for (j = 0; j < XMAX; j++) {
-	    int t = (i * XMAX * 3) + j * 3;
-	    if (solid) {
-		bm.rgb_buf[t] = 0x00;
-		bm.rgb_buf[t + 1] = 0x55;
-		bm.rgb_buf[t + 2] = 0xff;
-	    } else {
-		bm.rgb_buf[t] = 0x00;
-		bm.rgb_buf[t + 1] = 0x55 - i;
-		bm.rgb_buf[t + 2] = 0xff - i * 2;
-	    }
-	}
-    }
-
-    /* now draw the clock face */
-    for (i = 0; i < 60; i += 5) {
-	psi = i * (M_PI / 30.0);
-	dx = floor(sin(psi) * 25 * 0.9) + 29;
-	dy = floor(-cos(psi) * 22 * 0.9) + 24;
-	if ((i % 15) == 0) {
-	    /* 0/15/30/45 */
-	    dx -= 3;
-	    dy -= 3;
-	    idx = 26;
-	} else {
-	    /* everything else */
-	    dx -= 1;
-	    dy -= 1;
-	    idx = 28;
-	}
-	draw_sprite_alpha(dx, dy, idx, 20);
-    }
-
-    curr_time = time(NULL);
-    data = localtime(&curr_time);
-
-    sprintf(buffer, "%s %02d-%s", weekday[data->tm_wday],
-	    data->tm_mday, month[data->tm_mon]);
-
-    draw_string(2, 47, buffer);
-
-    /* copy it to the "frequent use" buffer */
-    memcpy(&bm.bgr, &bm.rgb_buf, RGBSIZE);
-
-    
-}				/* prepare_backbuffer */
-
 void copy_sprite_data(int sx, int sy, int w, int h, unsigned char *to)
 {
     int i, j;
@@ -500,103 +390,51 @@ void prepare_sprites(void)
 	i++;
     }
 
-    for (i = 0; i < NRFISH; i++) {
-	bm.fishes[i].y = 50;
-	bm.fishes[i].rev = (i % 2) ? 1 : 0;
-	bm.fishes[i].tx = rand() % XMAX;
-	bm.fishes[i].speed = (rand() % 2) + 1;
-    }
+	if(fish_traffic)
+	{
+		for (i = 0; i < NRFISH; i++)
+		{
+			if(i < (NRFISH / 2))
+			{
+				bm.fishes[i].tx = -18 - rand() % XMAX;
+				bm.fishes[i].y = 50;
+				bm.fishes[i].rev = 1;
+				bm.fishes[i].speed = 0;
+			}
+			else
+			{
+				bm.fishes[i].tx = XMAX + rand() % XMAX; 
+				bm.fishes[i].y = 50;
+				bm.fishes[i].rev = 0;
+				bm.fishes[i].speed = 0;
+			}
+		}
+
+	}
+	else
+	{
+		for (i = 0; i < NRFISH; i++) {
+		bm.fishes[i].y = 50;
+		bm.fishes[i].rev = (i % 2) ? 1 : 0;
+		bm.fishes[i].tx = rand() % XMAX;
+		bm.fishes[i].speed = (rand() % 2) + 1;
+		}
+	}
 
     bm.weeds[0].where = -5;
     bm.weeds[0].frame = rand() % 7;
 
-    /* Pigeon */
-    /* It's in the way with the cpu %!!!! :) */
-    /*
-    bm.weeds[1].where = 12;
-    bm.weeds[1].frame = rand() % 7;
-    */
-
     bm.weeds[1].where = 42;
     bm.weeds[1].frame = rand() % 7;
+
+#define DIFF_MIN 10
+	if(fish_traffic)
+	{
+		net_traffic.max_rx_diff = DIFF_MIN;
+		net_traffic.max_tx_diff = DIFF_MIN;
+	}
+
 }
-
-/* This function makes the dockapp window */
-void make_new_fishmon_dockapp(void)
-{
-#define MASK GDK_BUTTON_PRESS_MASK | \
-    GDK_ENTER_NOTIFY_MASK | GDK_LEAVE_NOTIFY_MASK
-
-    GdkWindowAttr attr;
-    GdkWindowAttr attri;
-    Window win;
-    Window iconwin;
-
-    XSizeHints sizehints;
-    XWMHints wmhints;
-
-    memset(&attr, 0, sizeof(GdkWindowAttr));
-
-    attr.width = 64;
-    attr.height = 64;
-    attr.title = "fishmon";
-    attr.event_mask = MASK;
-    attr.wclass = GDK_INPUT_OUTPUT;
-    attr.visual = gdk_visual_get_system();
-    attr.colormap = gdk_colormap_get_system();
-    attr.wmclass_name = "fishmon";
-    attr.wmclass_class = "fishmon";
-    attr.window_type = GDK_WINDOW_TOPLEVEL;
-
-    /* make a copy for the iconwin - parameters are the same */
-    memcpy(&attri, &attr, sizeof(GdkWindowAttr));
-
-    sizehints.flags = USSize;
-    sizehints.width = 64;
-    sizehints.height = 64;
-
-    bm.win = gdk_window_new(NULL, &attr,
-			    GDK_WA_TITLE | GDK_WA_WMCLASS |
-			    GDK_WA_VISUAL | GDK_WA_COLORMAP);
-    if (!bm.win) {
-	fprintf(stderr, "FATAL: cannot make toplevel window\n");
-	exit(1);
-    }
-
-    bm.iconwin = gdk_window_new(bm.win, &attri,
-				GDK_WA_TITLE | GDK_WA_WMCLASS);
-    if (!bm.iconwin) {
-	fprintf(stderr, "FATAL: cannot make icon window\n");
-	exit(1);
-    }
-
-    win = GDK_WINDOW_XWINDOW(bm.win);
-    iconwin = GDK_WINDOW_XWINDOW(bm.iconwin);
-    XSetWMNormalHints(GDK_WINDOW_XDISPLAY(bm.win), win, &sizehints);
-
-    wmhints.initial_state = WithdrawnState;
-    wmhints.icon_window = iconwin;
-    wmhints.icon_x = 0;
-    wmhints.icon_y = 0;
-    wmhints.window_group = win;
-    wmhints.flags =
-	StateHint | IconWindowHint | IconPositionHint | WindowGroupHint;
-    XSetWMHints(GDK_WINDOW_XDISPLAY(bm.win), win, &wmhints);
-
-    bm.gc = gdk_gc_new(bm.win);
-
-    bm.pixmap =
-	gdk_pixmap_create_from_xpm_d(bm.win, &(bm.mask), NULL, master_xpm);
-    gdk_window_shape_combine_mask(bm.win, bm.mask, 0, 0);
-    gdk_window_shape_combine_mask(bm.iconwin, bm.mask, 0, 0);
-
-    gdk_window_set_back_pixmap(bm.win, bm.pixmap, False);
-    gdk_window_set_back_pixmap(bm.iconwin, bm.pixmap, False);
-
-    gdk_window_show(bm.win);
-
-#undef MASK
-}				/* make_new_fishmon_dockapp */
 
 /********************************************************************
  *                                                                  *
@@ -884,84 +722,255 @@ void putpixel(int x, int y, float i, int linewidth, int color)
     }
 }
 
-/* Checks if unread mail exists.
- * Only every 100th call will actually do the check
- * Sets new_mail to true if new mail exists, otherwise false */
-void check_mail(void)
+// Pigeon
+// A lot of hard coded... hopefully for now only...
+
+
+#define NET_DEVICE		"eth0"
+#define FISH_MAX_SPEED	8
+
+char buffer[256];
+
+void get_traffic()
 {
-    static int timeout = 100;
-    static char *mail = NULL;
-    struct stat stat_buf;
+	FILE *dev;
 
-    /* only the first and every 100th call ... */
-    if (timeout++ < 100)
-	return;
+	int diff;
 
-    timeout = 0;
-
-    if (!mail) {
-	mail = getenv("MAIL");
-	/* printf("Mail file/dir read : %s\n",mail); */
-    }
-
-    /* environment variable MAIL is not set */
-    if (!mail)
-	return;
-
-    /* Read state */
-    if (stat(mail, &stat_buf) < 0) {
-	new_mail = 0;
-	return;
-    }
-    
-    if ((stat_buf.st_ctime > stat_buf.st_atime) && stat_buf.st_size > 0)
-	new_mail = 1; /* we got mail!!! */
-    else
-	new_mail = 0;
-}
-
-void parse_options(int argc, char **argv)
-{
-    static int ch = 0;
-    static struct option long_opts[] = {
-	{ "h",		no_argument, NULL, 1 },
-	{ "help",	no_argument, NULL, 1 },
-	{ "v",		no_argument, NULL, 2 },
-	{ "version",	no_argument, NULL, 2 },
-	{ "c",		no_argument, &enable_check_mail, 1 },
-	{ "check-mail", no_argument, &enable_check_mail, 1 },
-	{ "b",		no_argument, &broken_wm, 1 },
-	{ "broken",	no_argument, &broken_wm, 1 },
-	{ 0, 0, 0, 0 }
-    };
-
-    while ((ch = getopt_long_only(argc, argv, "", long_opts, NULL)) != -1) {
-	switch (ch) {
-	    case 1:
-		do_help();
-		exit(0);
-		break;
-	    case 2:
-		do_version();
-		exit(0);
-		break;
+	if((dev = fopen("/proc/net/dev", "r")) == NULL)
+	{
+		// Cannot use that... hmm different system?
+		fish_traffic = 0;
 	}
+	else
+	{
+		// Here we go...
+
+		// Don't care about the first 2 lines
+		fgets(buffer, 256, dev);
+		fgets(buffer, 256, dev);
+
+		while(fgets(buffer, 256, dev))
+		{
+			char name[256];
+			//printf("%s\n", buffer);
+			// I love sscanf! :)
+			sscanf(buffer, "%*[ ]%[^:]:%*d %d %*d %*d %*d %*d %*d %*d %*d %d %*d %*d %*d %*d %*d %*d", name, &net_traffic.rx_amount, &net_traffic.tx_amount);
+			//printf("%s/%d/%d\n", name, net_traffic.tx_amount, net_traffic.rx_amount);
+
+			if(!strcmp(name, NET_DEVICE))
+			{
+				//printf("%d\n", net_traffic.rx_amount);
+
+				if(net_traffic.rx_amount != net_traffic.last_rx_amount)
+				{
+					if(net_traffic.last_rx_amount == 0)
+					{
+						net_traffic.last_rx_amount = net_traffic.rx_amount;
+					}
+
+					diff = net_traffic.rx_amount - net_traffic.last_rx_amount;
+					net_traffic.last_rx_amount = net_traffic.rx_amount;
+					net_traffic.rx_rate = FISH_MAX_SPEED * diff / net_traffic.max_rx_diff;
+					if(net_traffic.rx_rate == 0)
+					{
+						// At least, make it move a bit, cos we know there's
+						// traffic
+						net_traffic.rx_rate = 1;
+					}
+
+					// Do something to max rate, to do proper (hopefully)
+					// scaling
+					if(net_traffic.max_rx_diff < diff)
+					{
+						net_traffic.max_rx_diff = diff;
+					}
+					else
+					{
+						// Slowly lower the scale
+						if(++net_traffic.rx_cnt > 5)
+						{
+							net_traffic.max_rx_diff = diff;
+							if(net_traffic.max_rx_diff < DIFF_MIN)
+							{
+								// And don't scale it too low
+								net_traffic.max_rx_diff = DIFF_MIN;
+							}
+							net_traffic.rx_cnt = 0;
+						}
+					}
+				}
+				else
+				{
+					net_traffic.rx_rate = 0;
+				}
+
+				//printf("%d\n", net_traffic.tx_amount);
+
+				if(net_traffic.tx_amount != net_traffic.last_tx_amount)
+				{
+					if(net_traffic.last_tx_amount == 0)
+					{
+						net_traffic.last_tx_amount = net_traffic.tx_amount;
+					}
+					diff = net_traffic.tx_amount - net_traffic.last_tx_amount;
+					net_traffic.last_tx_amount = net_traffic.tx_amount;
+					net_traffic.tx_rate = FISH_MAX_SPEED * diff / net_traffic.max_tx_diff;
+					if(net_traffic.tx_rate == 0)
+					{
+						// At least, make it move a bit, cos we know there's
+						// traffic
+						net_traffic.tx_rate = 1;
+					}
+					
+					// Do something to max rate, to do proper (hopefully)
+					// scaling
+					if(net_traffic.max_tx_diff < diff)
+					{
+						net_traffic.max_tx_diff = diff;
+					}
+					else
+					{
+						// Slowly lower the scale
+						if(++net_traffic.tx_cnt > 5)
+						{
+							net_traffic.max_tx_diff = diff;
+							if(net_traffic.max_tx_diff < DIFF_MIN)
+							{
+								// And don't scale it too low
+								net_traffic.max_tx_diff = DIFF_MIN;
+							}
+							net_traffic.tx_cnt = 0;
+						}
+					}
+				}
+				else
+				{
+					net_traffic.tx_rate = 0;
+				}
+
+			}
+
+		}
+
+	}
+	fclose(dev);
+
+}
+
+void traffic_fish_update()
+{
+    int i, j;
+    int min_y;
+
+    for (i = 0; i < NRFISH; i++) {
+
+
+	/* frozen fish doesn't need to be handled, or drawn */
+	if (bm.fishes[i].speed == 0 && net_traffic.rx_rate == 0 && net_traffic.tx_rate == 0)
+	    continue;
+
+		//printf("%d %d %d %d [%d %d]\n", bm.fishes[i].tx, bm.fishes[i].y, net_traffic.tx_rate, net_traffic.rx_rate, net_traffic.max_tx_diff, net_traffic.max_rx_diff);
+
+		if(i < (NRFISH / 2))
+		{
+			// tx traffic
+			if(bm.fishes[i].tx < XMAX)
+			{
+				if(bm.fishes[i].speed < net_traffic.tx_rate)
+				{
+					// Let's accelerate!
+					//bm.fishes[i].speed = net_traffic.tx_rate;
+
+					// Slowly accelerate
+					bm.fishes[i].speed += 1;
+				}
+
+				bm.fishes[i].tx += bm.fishes[i].speed;
+			}
+			else
+			{
+				// Done once, go back
+				bm.fishes[i].tx = -18 - rand() % XMAX;
+				bm.fishes[i].y = (rand() % (YMAX - 14));
+				if(net_traffic.tx_rate == 0)
+				{
+					// Stop the fish when it's at the end...
+					bm.fishes[i].speed = 0;
+				}
+				else
+				{
+					bm.fishes[i].speed = net_traffic.tx_rate;
+				}
+			}
+		}
+		else
+		{
+			// rx traffic
+			if(bm.fishes[i].tx > -18)
+			{
+				if(bm.fishes[i].speed < net_traffic.rx_rate)
+				{
+					// Let's accelerate!
+					//bm.fishes[i].speed = net_traffic.rx_rate;
+
+					// Slowly accelerate
+					bm.fishes[i].speed += 1;
+				}
+				bm.fishes[i].tx -= bm.fishes[i].speed;
+			}
+			else
+			{
+				// Done once, go back
+				bm.fishes[i].tx = XMAX + rand() % XMAX;
+				bm.fishes[i].y = (rand() % (YMAX - 14));
+				if(net_traffic.rx_rate == 0)
+				{
+					// Stop the fish when it's at the end...
+					bm.fishes[i].speed = 0;
+				}
+				else
+				{
+					bm.fishes[i].speed = net_traffic.rx_rate;
+					bm.fishes[i].tx -= bm.fishes[i].speed;
+				}
+			}
+		}
+
+		/* move fish in vertical position randomly by one pixel up or down */
+		j = rand() % 16;
+		if (j <= 4)
+		{
+			bm.fishes[i].y--;
+		}
+		else if (j > 12)
+		{
+			bm.fishes[i].y++;
+		}
+
+		// Pigeon
+		// Make sure the fish is in the water :)
+		min_y = real_waterlevel_max + 3;
+
+		if(bm.fishes[i].y <= min_y)
+		{
+			bm.fishes[i].y = min_y;
+		}
+
+		/* animate fishes using fish_animation array */
+		draw_sprite(bm.fishes[i].tx, bm.fishes[i].y,
+			bm.fishes[i].rev +
+			fish_animation[bm.fishes[i].frame]);
+
+		/* switch to next swimming frame */
+		bm.fishes[i].delay += bm.fishes[i].speed;
+		if (bm.fishes[i].delay >= 10) {
+			if (++bm.fishes[i].frame > 3)
+			bm.fishes[i].frame = 0;
+			bm.fishes[i].delay = 0;
+		}
     }
+
 }
 
-void do_help(void)
-{
-    printf("Usage: wmfishtime [options]\n\n"
-	   " -h\t--help\t\tshow this message and exit\n"
-	   " -v\t--version\tshow version and exit\n"
-	   " -c\t--check-mail\tenables check for new mail\n"
-	   " -b\t--broken\tactivates broken window manager fix\n\n"
-	   "Yet Another Waste of CPU Cycles! Dock app clock with\n"
-	   "shy fish, bubbles and mail check functionality (disabled by default).\n"
-	   "Try out the man page wmfishtime (1x).\n");
-}
 
-void do_version(void)
-{
-    printf("wmfishtime %s\n", VERSION);
-}
