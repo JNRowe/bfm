@@ -1,5 +1,5 @@
 /*
- * bubblefishymon 0.4
+ * bubblefishymon 0.6.0
  *
  * Well, Hacks from bubblemon by timecop and Johan
  *
@@ -76,7 +76,7 @@
  */
 #define _GNU_SOURCE
 
-#define VERSION "1.32"
+#define VERSION "0.6.0"
 
 /* general includes */
 #include <stdio.h>
@@ -124,6 +124,7 @@ static void bubblemon_update(int proximity);
 static void make_new_bubblemon_dockapp(void);
 static void get_memory_load_percentage(void);
 static void bubblemon_session_defaults(void);
+static int get_screen_selection(void);
 #if defined(ENABLE_CPU) || defined(ENABLE_MEMSCREEN)
 /* draw functions for load average / memory screens */
 static void draw_pixel(unsigned int x, unsigned int y, unsigned char *buf,
@@ -311,7 +312,7 @@ static void bubblemon_session_defaults(void)
 /* *INDENT-OFF* */
 static void print_usage(void)
 {
-    printf( "BubbleMon version "VERSION", features: %s\n"
+    printf( "bubblefishymon version "VERSION", features: %s\n"
 	    "Usage: bubblefishymon [switches] [program_1] [program_2]\n\n"
 	    "Disable compiled-in features\n"
 #ifdef ENABLE_DUCK
@@ -353,6 +354,8 @@ int main(int argc, char **argv)
 #endif
 {
     char execute[256];
+    int proximity = 0;
+    int ch;
 #ifdef FPS
     int f, o;
     time_t y;
@@ -362,9 +365,7 @@ int main(int argc, char **argv)
 #endif
 
 #ifndef GKRELLM_BFM
-    int proximity = 0;
     GdkEvent *event;
-    int ch;
 #endif
 
 #ifdef FPS
@@ -677,19 +678,17 @@ static void make_new_bubblemon_dockapp(void)
     GDK_ENTER_NOTIFY_MASK | GDK_LEAVE_NOTIFY_MASK
 
     GdkWindowAttr attr;
+    GdkWindowAttr attri;
+    Window win;
+    Window iconwin;
 
     XSizeHints sizehints;
 #ifndef GKRELLM_BFM
     XWMHints wmhints;
-    Window iconwin;
-    Window win;
-    GdkWindowAttr attri;
 #endif
 
     attr.width = 64;
     attr.height = 64;
-//    Pigeon
-//    attr.title = "bubblemon";
     attr.title = "bubblefishymon";
     attr.event_mask = MASK;
     attr.wclass = GDK_INPUT_OUTPUT;
@@ -719,7 +718,7 @@ static void make_new_bubblemon_dockapp(void)
     attri.colormap = gdk_colormap_get_system();
     attri.wmclass_name = "bubblefishymon";
     attri.wmclass_class = "bubblefishymon";
-    attri.window_type = GDK_WINDOW_TOPLEVEL;
+    attri.window_type = GDK_WINDOW_CHILD;
 
     bm.iconwin = gdk_window_new(bm.win, &attri,
 				GDK_WA_TITLE | GDK_WA_WMCLASS);
@@ -750,6 +749,10 @@ static void make_new_bubblemon_dockapp(void)
     gdk_window_set_back_pixmap(bm.iconwin, bm.pixmap, False);
 
     gdk_window_show(bm.win);
+#endif
+#ifdef KDE_DOCKAPP
+    /* makes the dockapp visible inside KDE wm */
+    gdk_window_show(bm.iconwin);
 #endif
 
     /* We begin with zero bubbles */
@@ -784,6 +787,7 @@ static void bubblemon_update(int proximity)
     /* These values are for keeping track of where we have to start
        drawing water. */
     unsigned int waterlevel_min, waterlevel_max;
+    unsigned int real_waterlevel_min, real_waterlevel_max;
 
     /* These values are for keeping track how deep the duck is inside water */
     unsigned int action_min = 56;

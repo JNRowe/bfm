@@ -1,6 +1,8 @@
 # BubbleFishyMon with gkrellm support
-# Type 'make' to build bubblefishymon
-# Type 'make gkrellm' to build gkrellm-bfm.so
+# Type 'make' or 'make bubblefishymon' to build bubblefishymon
+# Type 'make bubblefishymon1' to build bubblefishymon for gtk1
+# Type 'make gkrellm' to build gkrellm-bfm.so for gkrellm2
+# Type 'make gkrellm1' to build gkrellm-bfm.so for gkrellm
 
 # bubblemon configuration
 EXTRA = -DENABLE_DUCK
@@ -9,6 +11,7 @@ EXTRA += -DENABLE_MEMSCREEN
 EXTRA += -DENABLE_FISH
 EXTRA += -DENABLE_TIME
 # EXTRA += -DUPSIDE_DOWN_DUCK
+# EXTRA += -DKDE_DOCKAPP
 
 # where to install this program
 PREFIX = /usr/local
@@ -16,14 +19,22 @@ PREFIX = /usr/local
 # no user serviceable parts below
 EXTRA += $(WMAN)
 
+# gtk cflags and gtk lib flags
+GTK_CFLAGS = $(shell gtk-config --cflags)
+GTK_LIBS = $(shell gtk-config --libs)
+
+GTK2_CFLAGS = $(shell pkg-config gtk+-2.0 --cflags)
+GTK2_LIBS = $(shell pkg-config gtk+-2.0 --libs)
+
 
 # optimization cflags
-CFLAGS = -O3 -Wall `gtk-config --cflags` ${EXTRA}
+#CFLAGS = -O3 -Wall ${EXTRA}
+CFLAGS = ${EXTRA}
 
 # profiling cflags
-# CFLAGS = -ansi -Wall -pg -O3 `gtk-config --cflags` ${EXTRA} -DPRO
+# CFLAGS = -ansi -Wall -pg -O3 ${EXTRA} -DPRO
 # test coverage cflags
-# CFLAGS = -fprofile-arcs -ftest-coverage -Wall -ansi -g `gtk-config --cflags` ${EXTRA} -DPRO
+# CFLAGS = -fprofile-arcs -ftest-coverage -Wall -ansi -g ${EXTRA} -DPRO
 
 
 SHELL = sh
@@ -42,22 +53,30 @@ STRIP = strip
 
 CC = gcc
 
+INSTALLMAN = -m 644
+
 
 
 # special things for Linux
 ifeq ($(OS), Linux)
 	SRCS += sys_linux.c
-    OBJS += sys_linux.o
-    LIBS = `gtk-config --libs | sed "s/-lgtk//g"`
-    INSTALL = -m 755
+	OBJS += sys_linux.o
+	INSTALL = -m 755
+	INSTALLMAN = -m 644
 endif
 
 # special things for FreeBSD
 ifeq ($(OS), FreeBSD)
 	SRCS += sys_freebsd.c
     OBJS += sys_freebsd.o
-    LIBS = `gtk-config --libs | sed "s/-lgtk//g"` -lkvm
+    LIBS = -lkvm
     INSTALL = -c -g kmem -m 2755 -o root
+endif
+
+# special things for OpenBSD
+ifeq ($(OS), OpenBSD)
+    OBJS += sys_openbsd.o
+    LIBS = `gtk-config --libs | sed "s/-lgtk//g"`
 endif
 
 #special things for SunOS
@@ -78,22 +97,35 @@ ifeq ($(OS), SunOS)
     ifeq ($(COMPILER), gcc)
 	CFLAGS=-O3 -Wall
     endif
-    CFLAGS +=`gtk-config --cflags` ${EXTRA}
+    CFLAGS += ${EXTRA}
 	SRCS += sys_sunos.c
     OBJS += sys_sunos.o
-    LIBS = `gtk-config --libs` -lkstat -lm
+    LIBS = -lkstat -lm
     INSTALL = -m 755
 endif
 
 all: $(BUBBLEFISHYMON)
 
 gkrellm: clean_obj
-	$(CC) -DGKRELLM_BFM $(CFLAGS) -c $(SRCS) $(GKRELLM_SRCS)
-	$(CC) $(LDFLAGS) -o $(GKRELLM_BFM) $(OBJS) $(GKRELLM_OBJS)
+	$(CC) -DGKRELLM2 -DGKRELLM_BFM -fPIC $(GTK2_CFLAGS) $(CFLAGS) -c $(SRCS) \
+		$(GKRELLM_SRCS)
+	$(CC) $(GTK2_LIBS) $(LDFLAGS) -o $(GKRELLM_BFM) $(OBJS) $(GKRELLM_OBJS)
 	$(STRIP) $(GKRELLM_BFM)
 
-bubblefishymon: clean_obj $(OBJS)
-	$(CC) $(CFLAGS) -o $(BUBBLEFISHYMON) $(OBJS) $(LIBS)
+gkrellm1: clean_obj
+	$(CC) -DGKRELLM_BFM -fPIC $(GTK_CFLAGS) $(CFLAGS) -c $(SRCS) \
+		$(GKRELLM_SRCS)
+	$(CC) $(GTK_LIBS) $(LDFLAGS) -o $(GKRELLM_BFM) $(OBJS) $(GKRELLM_OBJS)
+	$(STRIP) $(GKRELLM_BFM)
+
+bubblefishymon: clean_obj
+	$(CC) $(GTK2_CFLAGS) $(CFLAGS) -o $(BUBBLEFISHYMON) \
+		$(LIBS) $(GTK2_LIBS) $(SRCS)
+	$(STRIP) $(BUBBLEFISHYMON)
+
+bubblefishymon1: clean_obj
+	$(CC) $(GTK_CFLAGS) $(CFLAGS) -o $(BUBBLEFISHYMON) \
+		$(LIBS) $(GTK_LIBS) $(SRCS)
 	$(STRIP) $(BUBBLEFISHYMON)
 
 clean_obj:
@@ -103,5 +135,5 @@ clean:
 	rm -f bubblefishymon *.o *.bb* *.gcov gmon.* *.da *~ *.so
 
 install:
-	install $(INSTALL) $(BUBBLEFISHYMON) $(PREFIX)/bin
-
+	install $(INSTALL) $(BUBBLEFISHYMON) $(DESTDIR)$(PREFIX)/bin
+	install $(INSTALL_MAN) doc/bubblefishymon.1 $(DESTDIR)$(PREFIX)/man/man1

@@ -1,7 +1,9 @@
 
 BubbleFishyMon with gkrellm support
-Type 'make' to build bubblefishymon
-Type 'make gkrellm' to build gkrellm-bfm.so
+Type 'make' or 'make bubblefishymon' to build bubblefishymon
+Type 'make bubblefishymon1' to build bubblefishymon for gtk1
+Type 'make gkrellm' to build gkrellm-bfm.so for gkrellm2
+Type 'make gkrellm1' to build gkrellm-bfm.so for gkrellm
 
 
 TODO

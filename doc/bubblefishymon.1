@@ -1,0 +1,69 @@
+.\"                                      Hey, EMACS: -*- nroff -*-
+.\" First parameter, NAME, should be all caps
+.\" Second parameter, SECTION, should be 1-8, maybe w/ subsection
+.\" other parameters are allowed: see man(7), man(1)
+.TH BUBBLEFISHYMON 1 "September 6, 2002"
+.\" Please adjust this date whenever revising the manpage.
+.\"
+.\" Some roff macros, for reference:
+.\" .nh        disable hyphenation
+.\" .hy        enable hyphenation
+.\" .ad l      left justify
+.\" .ad b      justify to both left and right margins
+.\" .nf        disable filling
+.\" .fi        enable filling
+.\" .br        insert line break
+.\" .sp <n>    insert n+1 empty lines
+.\" for manpage-specific macros, see man(7)
+.SH NAME
+bubblefishymon \- system load meter with ducks and fish
+.SH SYNOPSIS
+.B bubblefishymon
+.RI [ options ] " " [ program ] " " [ program ]
+.br
+.SH DESCRIPTION
+This manual page documents briefly the
+.B bubblefishymon
+command.
+This manual page was written for the Debian distribution
+because the original program does not have a manual page.
+.PP
+.B bubblefishymon
+is a dockapp-style system monitor for CPU, memory, swap, load average and network traffic.  Based on wmfishtime(1) and bubblemon, this program has been considerably improved over the parent code.
+.PP
+The higher the water level, the more memory is in use.  The more profuse the bubbles, the higher the CPU usage.  Fish represent network traffic direction and speed.
+.PP
+When the mouse is moved into the window, the display will change to chow the load history, or, if the right Shift key is held, the current memory usage.  If you press the right mouse button, the window will freeze in that state until you move the mouse out then back into the window.
+.PP
+.B program1
+and
+.B program2
+are the programs to spawn when either the left or middle mouse buttons are pressed, respectively.
+.SH OPTIONS
+.TP
+.B \-d
+disable swimming duck.
+.TP
+.B \-f
+disable fish.
+.TP
+.B \-c
+disable CPU meter.
+.TP
+.B \-m
+disable memory screen.
+.TP
+.B \-p
+use alternate colour scheme in memory info screen.
+.TP
+.B \-k
+display memory and swap statistics in megabytes.
+.TP
+.B \-h
+display help.
+.SH SEE ALSO
+.BR wmbubble(1)
+.BR bubblemon-gnome1(1)
+.SH AUTHOR
+This manual page was taken and adapted from wmbubble by Gurkan Sengun <gurkan@linuks.mine.nu>, and modified for the Debian system by Jamie Wilkinson <jaq@debian.org>.
+The original manual page for wmbubble was written by John H. Robinson, IV <jaqque@debian.org> for the for the Debian GNU/Linux system (but may be used by others).

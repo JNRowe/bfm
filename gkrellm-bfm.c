@@ -23,18 +23,22 @@
  *
  */
 
+#ifdef GKRELLM2
+#include <gkrellm2/gkrellm.h>
+#else
 #include <gkrellm/gkrellm.h>
+#endif
 #include <libgen.h>
 #include <unistd.h>
 #include <errno.h>
 #include <stdlib.h>
 #include <time.h>
 
-#define PLUGIN_VERSION	"0.5.1"
+#define PLUGIN_VERSION	"0.6.0"
 
 #define PLUGIN_NAME	"gkrellm-bfm"
 #define PLUGIN_DESC	"bubblefishymon gkrellm port"
-#define PLUGIN_URL	"http://pigeond.net/bfm/"
+#define PLUGIN_URL	"http://www.jnrowe.uklinux.net.net/projects/bfm/"
 #define PLUGIN_STYLE	PLUGIN_NAME
 #define PLUGIN_KEYWORD	PLUGIN_NAME
 
@@ -44,7 +48,18 @@
 #define CHART_W 56
 #define CHART_H 56
 
+#ifdef GKRELLM2
+# define Monitor     GkrellmMonitor
+# define Chart       GkrellmChart
+# define ChartConfig GkrellmChartconfig
 
+# define gkrellm_create_tab        gkrellm_gtk_notebook_page
+# define gkrellm_create_framed_tab gkrellm_gtk_framed_notebook_page
+# define gkrellm_scrolled_text     gkrellm_gtk_scrolled_text_view
+# define gkrellm_add_info_text     gkrellm_gtk_text_view_append_strings
+
+# define init_plugin gkrellm_init_plugin
+#endif
 
 static gint style_id;
 static char *prog = NULL;
@@ -261,6 +276,7 @@ create_plugin_tab(GtkWidget *tab_vbox)
 		"http://www.student.nada.kth.se/~d92-jwa/code/\n\n",
 		"More hacks by Timecop\n",
 		"http://www.ne.jp/asahi/linux/timecop/\n\n",
+		"And more hacks by James Rowe\n\n",
 		"<i>Usage\n\n",
 		"Nice monitor with:\n",
 		"- Water level representing the memory usage...\n",

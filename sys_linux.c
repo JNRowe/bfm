@@ -18,8 +18,14 @@
  */
 
 #include <stdio.h>
+#include <string.h>
+#include <linux/version.h>
 #include "include/bubblemon.h"
 #include "include/sys_include.h"
+
+#if LINUX_VERSION_CODE > 0x20514
+#define  KERNEL_26
+#endif
 
 extern BubbleMonData bm;
 
@@ -60,6 +66,8 @@ int system_cpu(void)
     if (ototal == 0)		/* ototal == 0 means that this is the first time
 				   we get here */
 	cpuload = 0;
+    else if ((total - ototal) <= 0)
+	cpuload = 100;
     else
 	cpuload = (100 * (load - oload)) / (total - ototal);
 
@@ -70,16 +78,57 @@ int system_memory(void)
 {
     u_int64_t my_mem_used, my_mem_max;
     u_int64_t my_swap_used, my_swap_max;
+#ifdef KERNEL_26
+    char *p;
+#endif
 
     static int mem_delay = 0;
     FILE *mem;
-    static u_int64_t aa, ab, ac, ad, ae, af, ag, ah;
+    static u_int64_t aa, ab, ac, ad;
+#ifndef KERNEL_26
+    static u_int64_t ae, af, ag, ah;
+#endif
     /* put this in permanent storage instead of stack */
     static char shit[2048];
 
     /* we might as well get both swap and memory at the same time.
      * sure beats opening the same file twice */
     if (mem_delay-- <= 0) {
+#ifdef KERNEL_26
+	mem = fopen("/proc/meminfo", "r");
+	memset(shit, 0, sizeof(shit));
+	fread(shit, 2048, 1, mem);
+	p = strstr(shit, "MemTotal");
+	if (p) {
+	    sscanf(p, "MemTotal:%Ld", &aa);
+	    my_mem_max = aa << 10;
+
+	    p = strstr(p, "Active");
+	    if (p) {
+		sscanf(p, "Active:%Ld", &ab);
+		my_mem_used = ab << 10;
+
+		p = strstr(p, "SwapTotal");
+		if (p) {
+		    sscanf(p, "SwapTotal:%Ld", &ac);
+		    my_swap_max = ac << 10;
+
+		    p = strstr(p, "SwapFree");
+		    if (p) {
+			sscanf(p, "SwapFree:%Ld", &ad);
+			my_swap_used = my_swap_max - (ad << 10);
+
+			bm.mem_used = my_mem_used;
+			bm.mem_max = my_mem_max;
+			bm.swap_used = my_swap_used;
+			bm.swap_max = my_swap_max;
+		    }
+		}
+	    }
+	}
+	fclose(mem);
+	mem_delay = 25;
+#else
 	mem = fopen("/proc/meminfo", "r");
 	fgets(shit, 2048, mem);
 	
@@ -106,6 +155,7 @@ int system_memory(void)
 	bm.mem_max = my_mem_max;
 	bm.swap_used = my_swap_used;
 	bm.swap_max = my_swap_max;
+#endif
 
 	/* memory info changed - update things */
 	return 1;
