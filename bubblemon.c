@@ -606,7 +606,7 @@ int main(int argc, char **argv)
 
 #ifdef GKRELLM_BFM
 void
-gkrellm_update(GtkWidget *widget, int start_x, int proximity)
+gkrellm_update(GtkWidget *widget, GdkDrawable *drawable, int start_x, int proximity)
 {
 
     bm.screen_type = 1;
@@ -616,7 +616,8 @@ gkrellm_update(GtkWidget *widget, int start_x, int proximity)
     /* update main rgb buffer: bm.rgb_buf */
     bubblemon_update(proximity);
 
-    gdk_draw_rgb_image(widget->window, widget->style->fg_gc[GTK_STATE_NORMAL], start_x, 0, 56, 56, GDK_RGB_DITHER_NONE, bm.rgb_buf, 56 * 3);
+    gdk_draw_rgb_image(drawable, widget->style->fg_gc[GTK_STATE_NORMAL], start_x, 0, 56, 56, GDK_RGB_DITHER_NONE, bm.rgb_buf, 56 * 3);
+
 
     if (memscreen_enabled)
 	roll_history();

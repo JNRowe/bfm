@@ -30,7 +30,7 @@
 #include <stdlib.h>
 #include <time.h>
 
-#define PLUGIN_VERSION	"0.5"
+#define PLUGIN_VERSION	"0.5.1"
 
 #define PLUGIN_NAME	"gkrellm-bfm"
 #define PLUGIN_DESC	"bubblefishymon gkrellm port"
@@ -48,7 +48,6 @@
 
 static gint style_id;
 static char *prog = NULL;
-static GtkWidget *tabs = NULL;
 
 static Monitor *mon = NULL;
 static Chart *chart = NULL;
@@ -58,7 +57,7 @@ static ChartConfig *chart_config = NULL;
 
 /* From the actual bfm */
 int bfm_main();
-void gkrellm_update(GtkWidget *widget, int start_x, int proximity);
+void gkrellm_update(GtkWidget *widget, GdkDrawable *drawable, int start_x, int proximity);
 void prepare_sprites(void);
 extern int cpu_enabled;
 extern int duck_enabled;
@@ -79,33 +78,22 @@ GtkWidget *clock_check = NULL;
 GtkWidget *fish_traffic_check = NULL;
 
 static void
-update_plugin ()
+update_plugin(void)
 {
 	GdkEventExpose event;
 	gint ret_val;
-	gtk_signal_emit_by_name(GTK_OBJECT(chart->drawing_area), "expose_event", &event, &ret_val  );
+	gtk_signal_emit_by_name(GTK_OBJECT(chart->drawing_area), "expose_event", &event, &ret_val);
 
 }
 
-
-/*
-  remove_configpanel_tab ()
-
-  Removes a configuration tab from the config box
-*/
-static void remove_configpanel_tab (int i)
-{
-  if (!GTK_IS_OBJECT (tabs))
-    return;
-
-  gtk_notebook_remove_page (GTK_NOTEBOOK (tabs), i + 1);
-}
 
 static gint
 chart_expose_event(GtkWidget *widget, GdkEventExpose *ev)
 {
-	int x = (gkrellm_chart_width() - CHART_W) / 2;
-	gkrellm_update(widget, x, proximity);
+	int x;
+	x = (gkrellm_chart_width() - CHART_W) / 2;
+	gkrellm_update(widget, chart->pixmap, x, proximity);
+	gkrellm_draw_chart_to_screen(chart);
 	return TRUE;
 }
 
@@ -279,10 +267,15 @@ create_plugin_tab(GtkWidget *tab_vbox)
 		"- Water color representing swap status...\n",
 		"- Bubbles representing CPU usage...\n",
 		"- Fish representing network traffic...\n",
+		"  (Fish swiming from left to right represents outgoing traffic,\n",
+		"   fish swiming from right to left represents incoming traffic)\n",
 		"- Cute little duck swimming...\n",
 		"- Clock hands representing time (obviously)...\n",
-		"- Click and it will run a command for you (requested by Nick =)",
-		"\n\n"
+		"- Click and it will run a command for you (requested by Nick =)\n\n",
+		"<i>Notes\n\n",
+		"- Currently Gkrellm updates at most 10 times a second, and so\n",
+		"  BFM updates is a bit jerky still.\n",
+		"\n\n",
 	};
 
 	static gchar *about_text =
