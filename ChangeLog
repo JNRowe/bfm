@@ -1,3 +1,14 @@
+2003-11-05 05:03  James Rowe  <Jay@jnrowe.ukfsn.org>
+	* : Pull the NET_DEVICE variable in to the config section of the
+		Makefile.  (suggestion from too many people to mention.)
+	* : Fixes to all "-Wall" warnings.
+	* : Fixed typo in PLUGIN_URL.
+	* : Wow, so not only are there still C compilers out there that don't
+		accept C++ style '//' comments, but there are people who use
+		such compilers out there too. In all seriousness though, thanks
+		to Teijo for finding such a system just to send a bug 
+		report :P
+
 2003-11-04 01:48  Bill Wilson <bill@gkrellm.net>
 	* : Adds a spin button and code so there can be a bubblefishymon
 		update interval independent of gkrellm builtin updates.  I
@@ -9,7 +20,7 @@
 		longer the "Apply" and "Close" buttons appearing when the
 		bubblefishymon config page is up.
 
-2003-11-02 16:37  James Rowe  <Jay@jnrowe.uklinux.net>
+2003-11-02 16:37  James Rowe  <Jay@jnrowe.ukfsn.org>
 	* : Applied patch from Huw Giddens to fix the memory usage routines
 		for 2.6 kernels that still works for 2.4 kernels.  It is now
 		possible to use the same binary with different kernels.
@@ -19,7 +30,7 @@
 		and "all" target].  And the "install" target changes have been
 		taken under some duress.
 
-2003-10-08 11:36  James Rowe  <Jay@jnrowe.uklinux.net>
+2003-10-08 11:36  James Rowe  <Jay@jnrowe.ukfsn.org>
 
 	* : Applied the gkrellm2 support patch from Debian's package, by
 		Sjoerd Simons <sjoerd@luon.net>.

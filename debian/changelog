@@ -1,3 +1,21 @@
+bfm (0.6.3-1) unstable; urgency=low
+
+  * New upstream version.
+
+ -- James Rowe <Jay@jnrowe.ukfsn.org>  Sat, 08 Nov 2003 17:45:31 +0000
+
+bfm (0.6.2-1) unstable; urgency=low
+
+  * New upstream version.
+
+ -- James Rowe <Jay@jnrowe.ukfsn.org>  Sat, 08 Nov 2003 17:40:12 +0000
+
+bfm (0.6.1-1) unstable; urgency=low
+
+  * New upstream version.
+
+ -- Huw Giddens <gidhu432@student.otago.ac.nz>  Wed, 05 Nov 2003 13:06:29 +1300
+
 bfm (0.6.0-5) unstable; urgency=low
 
   * Added missing copyright text to fishmon.c

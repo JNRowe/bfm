@@ -1,4 +1,4 @@
-/*  BubbleFishyMon dockapp 0.6.2
+/*  BubbleFishyMon dockapp
  *  
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -251,8 +251,8 @@ void bubble_update(void)
  */
 static int adjust_y(int y)
 {
-	// Pigeon
-	// Make sure the fish is in the water :)
+	/* Pigeon
+	   Make sure the fish is in the water :) */
 	int min_y = (YMAX * (100 - bm.mem_percent))/100;
 
 	if(y <= min_y) return min_y;
@@ -644,7 +644,7 @@ void traffic_fish_update()
 
     for (i = 0; i < NRFISH; i++)
 	{
-		// No traffic, do nothing
+		/* No traffic, do nothing */
 		if (bm.fishes[i].speed == 0 && rx_speed == 0 && tx_speed == 0)
 		{
 			continue;
@@ -652,12 +652,12 @@ void traffic_fish_update()
 
 		if(i < (NRFISH / 2))
 		{
-			// tx traffic
+			/* tx traffic */
 			if(bm.fishes[i].tx < XMAX)
 			{
 				if(bm.fishes[i].speed < tx_speed)
 				{
-					// Slowly accelerate
+					/* Slowly accelerate */
 					bm.fishes[i].speed += 1;
 				}
 
@@ -665,12 +665,12 @@ void traffic_fish_update()
 			}
 			else
 			{
-				// Done once, go back
+				/* Done once, go back */
 				bm.fishes[i].tx = -18 - rand() % XMAX;
 				bm.fishes[i].y = (rand() % (YMAX - 14));
 				if(tx_speed == 0)
 				{
-					// Stop the fish when it's at the end...
+					/* Stop the fish when it's at the end... */
 					bm.fishes[i].speed = 0;
 				}
 				else
@@ -681,24 +681,24 @@ void traffic_fish_update()
 		}
 		else
 		{
-			// rx traffic
+			/* rx traffic */
 			if(bm.fishes[i].tx > -18)
 			{
 				if(bm.fishes[i].speed < rx_speed)
 				{
-					// Slowly accelerate
+					/* Slowly accelerate */
 					bm.fishes[i].speed += 1;
 				}
 				bm.fishes[i].tx -= bm.fishes[i].speed;
 			}
 			else
 			{
-				// Done once, go back
+				/* Done once, go back */
 				bm.fishes[i].tx = XMAX + rand() % XMAX;
 				bm.fishes[i].y = (rand() % (YMAX - 14));
 				if(rx_speed == 0)
 				{
-					// Stop the fish when it's at the end...
+					/* Stop the fish when it's at the end... */
 					bm.fishes[i].speed = 0;
 				}
 				else
@@ -801,7 +801,7 @@ void time_update(void)
 	    mdy = floor(-cos(psi) * 22 * 0.7) + 24;
 
 	    /* reflash the backbuffer / date / weekday */
-	    // prepare_backbuffer(0);
+	    /* prepare_backbuffer(0); */
 	}
     }
 

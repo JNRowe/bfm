@@ -4,6 +4,9 @@
 # Type 'make gkrellm' to build gkrellm-bfm.so for gkrellm2
 # Type 'make gkrellm1' to build gkrellm-bfm.so for gkrellm
 
+# where to install this program
+PREFIX ?= /usr/local
+
 # bubblemon configuration
 EXTRA = -DENABLE_DUCK
 EXTRA += -DENABLE_CPU
@@ -13,10 +16,13 @@ EXTRA += -DENABLE_TIME
 # EXTRA += -DUPSIDE_DOWN_DUCK
 # EXTRA += -DKDE_DOCKAPP
 
-# where to install this program
-PREFIX ?= /usr/local
+# If building for Linux define the network device to monitor.
+NET_DEVICE = ppp0
 
-# no user serviceable parts below
+
+###############################################################################
+# no user serviceable parts below                                             #
+###############################################################################
 EXTRA += $(WMAN)
 
 # gtk cflags and gtk lib flags
@@ -59,6 +65,11 @@ INSTALLMAN = -m 644
 
 # special things for Linux
 ifeq ($(OS), Linux)
+ifeq "$(NET_DEVICE)" ""
+	CFLAGS+=-DNET_DEVICE=\"eth0\"
+else
+	CFLAGS+=-DNET_DEVICE=\"$(NET_DEVICE)\"
+endif
 	SRCS += sys_linux.c
 	OBJS += sys_linux.o
 	INSTALL = -m 755
@@ -81,7 +92,6 @@ endif
 
 #special things for SunOS
 ifeq ($(OS), SunOS)
-
     # try to detect if gcc is available (also works if you call gmake CC=cc to
     # select the sun compilers on a system with both)
     COMPILER=$(shell \

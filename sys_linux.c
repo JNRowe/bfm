@@ -140,28 +140,26 @@ void system_loadavg(void)
 
 
 #ifdef ENABLE_FISH
-
-#define NET_DEVICE		"eth0"
 #define FISH_MAX_SPEED	8
 #define DIFF_MIN 10
 
-// The actual speed for the fish...
+/* The actual speed for the fish... */
 int tx_speed;
 int rx_speed;
 
 u_int64_t tx_amount;
 u_int64_t rx_amount;
 
-// Store the last one to compare
+/* Store the last one to compare */
 u_int64_t last_tx_amount;
 u_int64_t last_rx_amount;
 
-// Store the max for scaling, too.
+/* Store the max for scaling, too. */
 u_int64_t max_tx_diff = DIFF_MIN;
 u_int64_t max_rx_diff = DIFF_MIN;
 
 
-// The cnt for scaling
+/* The cnt for scaling */
 int tx_cnt;
 int rx_cnt;
 int delay;
@@ -189,7 +187,7 @@ void get_traffic(void)
 	char buffer[256];
 	u_int64_t diff;
 
-	// Have some delay in updating/sampling traffic...
+	/* Have some delay in updating/sampling traffic... */
 	if(delay++ < 5)
 	{
 		return;
@@ -201,12 +199,12 @@ void get_traffic(void)
 
 	if((dev = fopen("/proc/net/dev", "r")) == NULL)
 	{
-		// Sanity check
+		/* Sanity check */
 		fish_traffic = 0;
 	}
 	else
 	{
-		// Don't care about the first 2 lines
+		/* Don't care about the first 2 lines */
 		fgets(buffer, 256, dev);
 		fgets(buffer, 256, dev);
 
@@ -214,12 +212,12 @@ void get_traffic(void)
 		{
 			char name[256];
 			
-			// I love sscanf! :)
+			/* I love sscanf! :) */
 			sscanf(buffer, "%*[ ]%[^:]:%*d %Ld %*d %*d %*d %*d %*d %*d %*d %Ld %*d %*d %*d %*d %*d %*d", name, &rx_amount, &tx_amount);
 
 			if(!strcmp(name, NET_DEVICE))
 			{
-				// Incoming traffic
+				/* Incoming traffic */
 				if(rx_amount != last_rx_amount)
 				{
 					if(last_rx_amount == 0)
@@ -232,26 +230,26 @@ void get_traffic(void)
 					rx_speed = FISH_MAX_SPEED * diff / max_rx_diff;
 					if(rx_speed == 0)
 					{
-						// At least, make it move a bit, cos we know there's
-						// traffic
+						/* At least, make it move a bit, cos we know there's
+						   traffic */
 						rx_speed = 1;
 					}
 
-					// Do something to max rate, to do proper (hopefully)
-					// scaling
+					/* Do something to max rate, to do proper (hopefully)
+					   scaling */
 					if(max_rx_diff < diff)
 					{
 						max_rx_diff = diff;
 					}
 					else
 					{
-						// Slowly lower the scale
+						/* Slowly lower the scale */
 						if(++rx_cnt > 5)
 						{
 							max_rx_diff = diff;
 							if(max_rx_diff < DIFF_MIN)
 							{
-								// And don't scale it too low
+								/* And don't scale it too low */
 								max_rx_diff = DIFF_MIN;
 							}
 							rx_cnt = 0;
@@ -264,7 +262,7 @@ void get_traffic(void)
 				}
 
 
-				// Outgoing traffic
+				/* Outgoing traffic */
 				if(tx_amount != last_tx_amount)
 				{
 					if(last_tx_amount == 0)
@@ -276,26 +274,26 @@ void get_traffic(void)
 					tx_speed= FISH_MAX_SPEED * diff / max_tx_diff;
 					if(tx_speed == 0)
 					{
-						// At least, make it move a bit, cos we know there's
-						// traffic
+						/* At least, make it move a bit, cos we know there's
+						   traffic */
 						tx_speed = 1;
 					}
 					
-					// Do something to max rate, to do proper (hopefully)
-					// scaling
+					/* Do something to max rate, to do proper (hopefully)
+					   scaling */
 					if(max_tx_diff < diff)
 					{
 						max_tx_diff = diff;
 					}
 					else
 					{
-						// Slowly lower the scale
+						/* Slowly lower the scale */
 						if(++tx_cnt > 5)
 						{
 							max_tx_diff = diff;
 							if(max_tx_diff < DIFF_MIN)
 							{
-								// And don't scale it too low
+								/* And don't scale it too low */
 								max_tx_diff = DIFF_MIN;
 							}
 							tx_cnt = 0;

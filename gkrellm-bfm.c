@@ -33,11 +33,11 @@
 #include <stdlib.h>
 #include <time.h>
 
-#define PLUGIN_VERSION	"0.6.2"
+#define PLUGIN_VERSION	"0.6.3"
 
 #define PLUGIN_NAME	"gkrellm-bfm"
 #define PLUGIN_DESC	"bubblefishymon gkrellm port"
-#define PLUGIN_URL	"http://www.jnrowe.uklinux.net.net/projects/bfm/"
+#define PLUGIN_URL	"http://www.jnrowe.ukfsn.org/projects/bfm/"
 #define PLUGIN_STYLE	PLUGIN_NAME
 #define PLUGIN_KEYWORD	PLUGIN_NAME
 

@@ -1,5 +1,5 @@
 /*
- * bubblefishymon 0.6.2
+ * bubblefishymon
  *
  * Well, Hacks from bubblemon by timecop and Johan
  *
@@ -76,7 +76,7 @@
  */
 #define _GNU_SOURCE
 
-#define VERSION "0.6.2"
+#define VERSION "0.6.3"
 
 /* general includes */
 #include <stdio.h>
@@ -124,7 +124,9 @@ static void bubblemon_update(int proximity);
 static void make_new_bubblemon_dockapp(void);
 static void get_memory_load_percentage(void);
 static void bubblemon_session_defaults(void);
+#ifndef GKRELLM_BFM
 static int get_screen_selection(void);
+#endif
 #if defined(ENABLE_CPU) || defined(ENABLE_MEMSCREEN)
 /* draw functions for load average / memory screens */
 static void draw_pixel(unsigned int x, unsigned int y, unsigned char *buf,
@@ -309,6 +311,7 @@ static void bubblemon_session_defaults(void)
 #undef DOUBLE_VAL
 #undef COLOR_VAL
 
+#ifndef GKRELLM_BFM
 /* *INDENT-OFF* */
 static void print_usage(void)
 {
@@ -346,6 +349,7 @@ static void print_usage(void)
     );
 }
 /* *INDENT-ON* */
+#endif
 
 #ifdef GKRELLM_BFM
 int bfm_main()
@@ -354,8 +358,10 @@ int main(int argc, char **argv)
 #endif
 {
     char execute[256];
+#ifndef GKRELLM_BFM
     int proximity = 0;
     int ch;
+#endif
 #ifdef FPS
     int f, o;
     time_t y;
@@ -678,9 +684,11 @@ static void make_new_bubblemon_dockapp(void)
     GDK_ENTER_NOTIFY_MASK | GDK_LEAVE_NOTIFY_MASK
 
     GdkWindowAttr attr;
+#ifndef GKRELLM_BFM
     GdkWindowAttr attri;
     Window win;
     Window iconwin;
+#endif
 
     XSizeHints sizehints;
 #ifndef GKRELLM_BFM
@@ -767,8 +775,8 @@ static void make_new_bubblemon_dockapp(void)
 #undef MASK
 }				/* make_new_bubblemon_dockapp */
 
-// Pigeon
-// Dirty, I moved these here so that I can use it somewhere else
+/* Pigeon
+   Dirty, I moved these here so that I can use it somewhere else */
 unsigned int real_waterlevel_min, real_waterlevel_max;
 
 /*
