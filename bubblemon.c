@@ -90,8 +90,12 @@
 #include <gdk/gdk.h>
 #include <gdk/gdkx.h>
 #include <X11/Xresource.h>
+#include <gtk/gtk.h>
 
+#ifndef GKRELLM_BFM
 #include "include/master.xpm"
+#endif
+
 #include "include/bubblemon.h"
 #include "include/sys_include.h"
 
@@ -108,6 +112,10 @@
 
 /* #define DEBUG_DUCK 1 */
 
+#ifndef GKRELLM_BFM
+static int get_screen_selection(void);
+#endif
+
 /* local prototypes *INDENT-OFF* */
 static void bubblemon_setup_samples(void);
 static void bubblemon_setup_colors(void);
@@ -116,7 +124,6 @@ static void bubblemon_update(int proximity);
 static void make_new_bubblemon_dockapp(void);
 static void get_memory_load_percentage(void);
 static void bubblemon_session_defaults(void);
-static int get_screen_selection(void);
 #if defined(ENABLE_CPU) || defined(ENABLE_MEMSCREEN)
 /* draw functions for load average / memory screens */
 static void draw_pixel(unsigned int x, unsigned int y, unsigned char *buf,
@@ -181,6 +188,10 @@ int memscreen_megabytes = 0;
 void prepare_backbuffer(int solid);
 void prepare_sprites(void);
 void fishmon_update(void);
+#endif
+
+#ifdef ENABLE_TIME
+void time_update(void);
 #endif
 
 #include "include/fishmon.h"
@@ -335,11 +346,13 @@ static void print_usage(void)
 }
 /* *INDENT-ON* */
 
+#ifdef GKRELLM_BFM
+int bfm_main()
+#else
 int main(int argc, char **argv)
+#endif
 {
     char execute[256];
-    int proximity = 0;
-    int ch;
 #ifdef FPS
     int f, o;
     time_t y;
@@ -347,18 +360,25 @@ int main(int argc, char **argv)
 #ifdef PRO
     int cnt = 25000;
 #endif
+
+#ifndef GKRELLM_BFM
+    int proximity = 0;
     GdkEvent *event;
+    int ch;
+#endif
 
 #ifdef FPS
     o = f = y = 0;
 #endif
 
     /* initialize GDK */
+#ifndef GKRELLM_BFM
     if (!gdk_init_check(&argc, &argv)) {
 	fprintf(stderr,
 		"GDK init failed, bye bye.  Check \"DISPLAY\" variable.\n");
 	exit(-1);
     }
+#endif
     gdk_rgb_init();
 
     /* dynamically generate getopt string depending on compile options
@@ -392,6 +412,7 @@ int main(int argc, char **argv)
     strcat(execute, "t");
 #endif
 
+#ifndef GKRELLM_BFM
     /* command line options */
     while ((ch = getopt(argc, argv, execute)) != -1) {
 	switch (ch) {
@@ -474,6 +495,8 @@ int main(int argc, char **argv)
     argc -= optind;
     argv += optind;
 
+#endif
+
     /* zero data structure */
     memset(&bm, 0, sizeof(bm));
 
@@ -495,7 +518,7 @@ int main(int argc, char **argv)
     }
 #endif
 
-
+#ifndef GKRELLM_BFM
 #ifdef PRO
     while (cnt--) {
 #else
@@ -577,12 +600,33 @@ int main(int argc, char **argv)
 	    roll_history();
 #endif				/* ENABLE_MEMSCREEN */
     }
+#endif
     return 0;
 }				/* main */
+
+#ifdef GKRELLM_BFM
+void
+gkrellm_update(GtkWidget *widget, int start_x, int proximity)
+{
+
+    bm.screen_type = 1;
+    /* get system statistics */
+    get_memory_load_percentage();
+
+    /* update main rgb buffer: bm.rgb_buf */
+    bubblemon_update(proximity);
+
+    gdk_draw_rgb_image(widget->window, widget->style->fg_gc[GTK_STATE_NORMAL], start_x, 0, 56, 56, GDK_RGB_DITHER_NONE, bm.rgb_buf, 56 * 3);
+
+    if (memscreen_enabled)
+	roll_history();
+}
+#endif
 
 /*
  * This determines if the left or right shift keys are depressed.
  */
+#ifndef GKRELLM_BFM
 static int get_screen_selection(void)
 {
     static KeyCode lshift_code, rshift_code;
@@ -623,6 +667,7 @@ static int get_screen_selection(void)
 	return 1;
     }
 }
+#endif
 
 /* This is the function that actually creates the display widgets */
 static void make_new_bubblemon_dockapp(void)
@@ -631,12 +676,14 @@ static void make_new_bubblemon_dockapp(void)
     GDK_ENTER_NOTIFY_MASK | GDK_LEAVE_NOTIFY_MASK
 
     GdkWindowAttr attr;
-    GdkWindowAttr attri;
-    Window win;
-    Window iconwin;
 
     XSizeHints sizehints;
+#ifndef GKRELLM_BFM
     XWMHints wmhints;
+    Window iconwin;
+    Window win;
+    GdkWindowAttr attri;
+#endif
 
     attr.width = 64;
     attr.height = 64;
@@ -655,6 +702,7 @@ static void make_new_bubblemon_dockapp(void)
     sizehints.width = 64;
     sizehints.height = 64;
 
+#ifndef GKRELLM_BFM
     bm.win = gdk_window_new(NULL, &attr,
 			    GDK_WA_TITLE | GDK_WA_WMCLASS |
 			    GDK_WA_VISUAL | GDK_WA_COLORMAP);
@@ -701,6 +749,7 @@ static void make_new_bubblemon_dockapp(void)
     gdk_window_set_back_pixmap(bm.iconwin, bm.pixmap, False);
 
     gdk_window_show(bm.win);
+#endif
 
     /* We begin with zero bubbles */
     bm.n_bubbles = 0;
@@ -1028,6 +1077,14 @@ static void bubblemon_update(int proximity)
 	if(fish_enabled)
 	{
 	    fishmon_update();
+	}
+#endif
+
+#ifdef ENABLE_TIME
+    /* update clock face */
+        if(time_enabled)
+	{
+	    time_update();
 	}
 #endif
 

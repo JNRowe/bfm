@@ -150,13 +150,6 @@ void fishmon_update(void)
     /* draw thermometer 80 - alpha 
     draw_sprite_alpha(49, 20, 31, 80); */
 
-#ifdef ENABLE_TIME
-    /* update clock face */
-        if(time_enabled)
-	{
-	    time_update();
-	}
-#endif
 
 }				/* fishmon_update */
 
