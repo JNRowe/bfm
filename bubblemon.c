@@ -76,7 +76,7 @@
  */
 #define _GNU_SOURCE
 
-#define VERSION "0.6.3"
+#define VERSION "0.6.4"
 
 /* general includes */
 #include <stdio.h>
@@ -165,6 +165,11 @@ int duck_enabled = 1;
 #ifdef ENABLE_FISH
 int fish_enabled = 1;
 int fish_traffic = 0;
+#ifdef NET_DEVICE
+char *network_interface = NET_DEVICE;
+#else
+char *network_interface = "eth0";
+#endif
 #endif
 
 #ifdef ENABLE_TIME
@@ -319,32 +324,32 @@ static void print_usage(void)
 	    "Usage: bubblefishymon [switches] [program_1] [program_2]\n\n"
 	    "Disable compiled-in features\n"
 #ifdef ENABLE_DUCK
-	    " -d\tdisable swimming duck\n"
+	    " -d\t\tdisable swimming duck\n"
 #ifdef UPSIDE_DOWN_DUCK
-	    " -u\tdisable upside-down duck\n"
+	    " -u\t\tdisable upside-down duck\n"
 #endif /* UPSIDE_DOWN_DUCK */
 #endif /* ENABLE_DUCK */
 #ifdef ENABLE_FISH
-	    " -f\tdisable fish\n"
+	    " -f\t\tdisable fish\n"
 #endif
 #ifdef ENABLE_CPU
-	    " -c\tdisable CPU meter\n"
+	    " -c\t\tdisable CPU meter\n"
 #endif /* ENABLE_CPU */
 #ifdef ENABLE_MEMSCREEN
-	    " -m\tdisable memory screen\n"
+	    " -m\t\tdisable memory screen\n"
 #endif /* ENABLE_MEMSCREEN */
 	    "\nGeneral options\n"
 #ifdef ENABLE_MEMSCREEN
-	    " -p\tuse alternative color scheme in memory info screen\n"
-	    " -k\tdisplay memory and swap statistics in megabytes\n"
+	    " -p\t\tuse alternative color scheme in memory info screen\n"
+	    " -k\t\tdisplay memory and swap statistics in megabytes\n"
 #endif
 #ifdef ENABLE_FISH
-	    " -n\tfish represents network traffic\n"
+	    " -n[iface]\tfish represents network traffic [on <iface>]\n"
 #endif
 #ifdef ENABLE_TIME
-	    " -t\tdraw the clock too\n"
+	    " -t\t\tdraw the clock too\n"
 #endif
-	    " -h\tdisplay this help\n",
+	    " -h\t\tdisplay this help\n",
 	    options /* this is the global static string with compiled features */
     );
 }
@@ -412,7 +417,7 @@ int main(int argc, char **argv)
 #ifdef ENABLE_FISH
     strcat(options, "FISH ");
     strcat(execute, "f");
-    strcat(execute, "n");
+    strcat(execute, "n::");
 #endif
 #ifdef ENABLE_TIME
     strcat(options, "TIME ");
@@ -485,6 +490,8 @@ int main(int argc, char **argv)
 	    break;
 	case 'n':
 	    fish_traffic = 1;
+	    if (optarg)
+	      network_interface = optarg;
 	    break;
 #endif
 #ifdef ENABLE_TIME
@@ -744,7 +751,6 @@ static void make_new_bubblemon_dockapp(void)
     wmhints.window_group = win;
     wmhints.flags =
 	StateHint | IconWindowHint | IconPositionHint | WindowGroupHint;
-    XSetWMHints(GDK_WINDOW_XDISPLAY(bm.win), win, &wmhints);
 
     bm.gc = gdk_gc_new(bm.win);
 
@@ -757,6 +763,8 @@ static void make_new_bubblemon_dockapp(void)
     gdk_window_set_back_pixmap(bm.iconwin, bm.pixmap, False);
 
     gdk_window_show(bm.win);
+
+    XSetWMHints(GDK_WINDOW_XDISPLAY(bm.win), win, &wmhints);
 #endif
 #ifdef KDE_DOCKAPP
     /* makes the dockapp visible inside KDE wm */

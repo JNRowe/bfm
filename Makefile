@@ -13,11 +13,11 @@ EXTRA += -DENABLE_CPU
 EXTRA += -DENABLE_MEMSCREEN
 EXTRA += -DENABLE_FISH
 EXTRA += -DENABLE_TIME
-# EXTRA += -DUPSIDE_DOWN_DUCK
+EXTRA += -DUPSIDE_DOWN_DUCK
 # EXTRA += -DKDE_DOCKAPP
 
 # If building for Linux define the network device to monitor.
-NET_DEVICE = ppp0
+NET_DEVICE = eth0
 
 
 ###############################################################################

@@ -1,23 +1,22 @@
 Source: bfm
 Section: x11
 Priority: optional
-Maintainer: Huw Giddens <gidhu432@student.otago.ac.nz>
-Build-Depends: debhelper (>= 4.0.0), gkrellm, libgtk2.0-dev
-Standards-Version: 3.6.0
+Maintainer: Jamie Wilkinson <jaq@debian.org>
+Build-Depends: debhelper (>> 4.0.0), gkrellm, libgtk2.0-dev
+Standards-Version: 3.6.1.0
 
 Package: bubblefishymon
 Architecture: any
 Depends: ${shlibs:Depends}
-Description: A system load dockapp, based on bubblemon
+Description: system load dockapp with a duck
  A load monitor dockapp, descended from wmfishtime and bubblemon.
- Features include fish representing network traffic, bubbles representing CPU
- usage, and a duck representing a duck.
+ Features include fish representing network traffic, bubbles representing
+ CPU usage, and a duck representing a duck.
 
 Package: gkrellm-bfm
 Architecture: any
 Depends: ${shlibs:Depends}
-Recommends: gkrellm
-Description: A system load plugin for gkrellm
- A load monitor for gkrellm, descended from wmfishtime and bubblemon.
- Features include fish representing network traffic, bubbles representing CPU
- usage, and a duck representing a duck.
+Description: system load plugin for gkrellm with a duck
+ A load monitor plugin for gkrellm, descended from wmfishtime and bubblemon.
+ Features include fish representing network traffic, bubbles representing
+ CPU usage, and a duck representing a duck.

@@ -1,3 +1,26 @@
+2003-07-24 03:57  Peter Palfrader <weasel@debian.org>
+	* : Move setting hints a bit down, as suggested in wmfire's
+		bug report #250937 (closes: #251507). See
+		http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=250937
+		and http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=251507
+	* : Restore default of using eth0 with 'fish show network traffic'.
+		(closes: #241284).  One of the recent versions changed that to
+		ppp0! See
+		http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=241284
+	* : Allow an optional value for -n to specify the network interface.
+		(closes: #159782).  See
+		http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=159782
+
+2003-07-24 03:53  James Rowe  <Jay@jnrowe.ukfsn.org>
+	* : Merged the debian patch.  Basically just changes a default option
+		in the Makefile and replaces the debian/ structure.  A small
+		attempt to make importing patches much easier(as they seem to
+		be coming from Debian users a lot ;)
+
+2004-07-24 03:38  Miguel Bazdresch <miguel@thewizardstower.org>
+	* : Stop the waterlevel memory monitor including cached memory in the
+		total. [Linux ONLY]
+
 2003-11-05 05:03  James Rowe  <Jay@jnrowe.ukfsn.org>
 	* : Pull the NET_DEVICE variable in to the config section of the
 		Makefile.  (suggestion from too many people to mention.)

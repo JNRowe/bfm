@@ -33,7 +33,7 @@
 #include <stdlib.h>
 #include <time.h>
 
-#define PLUGIN_VERSION	"0.6.3"
+#define PLUGIN_VERSION	"0.6.4"
 
 #define PLUGIN_NAME	"gkrellm-bfm"
 #define PLUGIN_DESC	"bubblefishymon gkrellm port"

@@ -1,7 +1,10 @@
 bfm for Debian
 --------------
 
-Thanks go to Jamie Wilkinson, on account of how most of the package stuff is
-'inspired' by his example with bfm-0.5.1
+Changed dockapp name from bfm to bubblefishymon.
 
- -- Huw Giddens <gidhu432@student.otago.ac.nz>, Mon, 27 Oct 2003 21:39:29 +1300
+Gurkan recommends starting the docapp like so:
+  bubblefishymon -n "aterm -tr -sh 69 +sb -rv -fn lime" "gmc --nodesktop"
+so clicking starts an aterm or a gmc.
+
+ -- Jamie Wilkinson <jaq@debian.org>, Mon, 19 Aug 2002 10:50:39 +1000
