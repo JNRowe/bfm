@@ -1,3 +1,24 @@
+2003-11-04 01:48  Bill Wilson <bill@gkrellm.net>
+	* : Adds a spin button and code so there can be a bubblefishymon
+		update interval independent of gkrellm builtin updates.  I
+		arbitrarily set to allow 10 - 50 updates per second.
+	* : Put a callback on the prog_entry so that the apply_config
+		function can be eliminated.  This totally converts the plugin
+		to an instant apply config and it becomes the first plugin I
+		know of that achieves this status!  You'll notice there are no
+		longer the "Apply" and "Close" buttons appearing when the
+		bubblefishymon config page is up.
+
+2003-11-02 16:37  James Rowe  <Jay@jnrowe.uklinux.net>
+	* : Applied patch from Huw Giddens to fix the memory usage routines
+		for 2.6 kernels that still works for 2.4 kernels.  It is now
+		possible to use the same binary with different kernels.
+	* : Import of debian packaging dir, again from Huw Giddens.  Probably
+		requires some fixing by someone with a Debian box, because 
+		some of the Makefile changes have not been applied. [ PREFIX
+		and "all" target].  And the "install" target changes have been
+		taken under some duress.
+
 2003-10-08 11:36  James Rowe  <Jay@jnrowe.uklinux.net>
 
 	* : Applied the gkrellm2 support patch from Debian's package, by
@@ -13,12 +34,3 @@
 	* : Bumped revision to 0.6.0 from the original 0.5.1 release on
 		http://pigeond.net/bfm/.
 
-2003-11-02 16:37  James Rowe  <Jay@jnrowe.uklinux.net>
-	* : Applied patch from Huw Giddens to fix the memory usage routines
-		for 2.6 kernels that still works for 2.4 kernels.  It is now
-		possible to use the same binary with different kernels.
-	* : Import of debian packaging dir, again from Huw Giddens.  Probably
-		requires some fixing by someone with a Debian box, because 
-		some of the Makefile changes have not been applied. [ PREFIX
-		and "all" target].  And the "install" target changes have been
-		taken under some duress.

@@ -1,4 +1,4 @@
-/*  BubbleFishyMon dockapp 0.6.1
+/*  BubbleFishyMon dockapp 0.6.2
  *  
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
