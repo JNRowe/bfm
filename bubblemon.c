@@ -1,5 +1,5 @@
 /*
- * bubblefishymon 0.6.0
+ * bubblefishymon 0.6.1
  *
  * Well, Hacks from bubblemon by timecop and Johan
  *
@@ -76,7 +76,7 @@
  */
 #define _GNU_SOURCE
 
-#define VERSION "0.6.0"
+#define VERSION "0.6.1"
 
 /* general includes */
 #include <stdio.h>

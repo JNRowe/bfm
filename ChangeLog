@@ -12,3 +12,13 @@
 		gkrellm.
 	* : Bumped revision to 0.6.0 from the original 0.5.1 release on
 		http://pigeond.net/bfm/.
+
+2003-11-02 16:37  James Rowe  <Jay@jnrowe.uklinux.net>
+	* : Applied patch from Huw Giddens to fix the memory usage routines
+		for 2.6 kernels that still works for 2.4 kernels.  It is now
+		possible to use the same binary with different kernels.
+	* : Import of debian packaging dir, again from Huw Giddens.  Probably
+		requires some fixing by someone with a Debian box, because 
+		some of the Makefile changes have not been applied. [ PREFIX
+		and "all" target].  And the "install" target changes have been
+		taken under some duress.

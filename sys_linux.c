@@ -16,16 +16,16 @@
  *  Foundation, Inc., 59 Temple Street #330, Boston, MA 02111-1307, USA.
  *
  */
+/* Huw Giddens 2003-10-27: Changed system_memory() so that it reports memory
+ *     correctly on Linux 2.6 systems. Also works on 2.4 systems without
+ *     recompile. Based on a patch by Marcelo E Magallon <mmagallo@debian.org>,
+ *     see http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=175140
+ */
 
 #include <stdio.h>
 #include <string.h>
-#include <linux/version.h>
 #include "include/bubblemon.h"
 #include "include/sys_include.h"
-
-#if LINUX_VERSION_CODE > 0x20514
-#define  KERNEL_26
-#endif
 
 extern BubbleMonData bm;
 
@@ -76,92 +76,50 @@ int system_cpu(void)
 
 int system_memory(void)
 {
-    u_int64_t my_mem_used, my_mem_max;
-    u_int64_t my_swap_used, my_swap_max;
-#ifdef KERNEL_26
-    char *p;
-#endif
+	u_int64_t mem_used, mem_max, swap_used, swap_max;
+	u_int64_t value, mem_cache, mem_buffers, swap_cache;
+	static int delay = 0;
+	FILE *mem;
+	char name[256];
+	char line[256];
 
-    static int mem_delay = 0;
-    FILE *mem;
-    static u_int64_t aa, ab, ac, ad;
-#ifndef KERNEL_26
-    static u_int64_t ae, af, ag, ah;
-#endif
-    /* put this in permanent storage instead of stack */
-    static char shit[2048];
+	if (delay-- <= 0) {
+		mem = fopen("/proc/meminfo", "r"); 
+		if (mem == NULL) return 0;
+		while (!feof(mem)) {
+			if (fgets(line, 256, mem) == NULL) break;
+			if (sscanf(line, "%s %Ld", name, &value) != 2) continue;
 
-    /* we might as well get both swap and memory at the same time.
-     * sure beats opening the same file twice */
-    if (mem_delay-- <= 0) {
-#ifdef KERNEL_26
-	mem = fopen("/proc/meminfo", "r");
-	memset(shit, 0, sizeof(shit));
-	fread(shit, 2048, 1, mem);
-	p = strstr(shit, "MemTotal");
-	if (p) {
-	    sscanf(p, "MemTotal:%Ld", &aa);
-	    my_mem_max = aa << 10;
-
-	    p = strstr(p, "Active");
-	    if (p) {
-		sscanf(p, "Active:%Ld", &ab);
-		my_mem_used = ab << 10;
-
-		p = strstr(p, "SwapTotal");
-		if (p) {
-		    sscanf(p, "SwapTotal:%Ld", &ac);
-		    my_swap_max = ac << 10;
-
-		    p = strstr(p, "SwapFree");
-		    if (p) {
-			sscanf(p, "SwapFree:%Ld", &ad);
-			my_swap_used = my_swap_max - (ad << 10);
-
-			bm.mem_used = my_mem_used;
-			bm.mem_max = my_mem_max;
-			bm.swap_used = my_swap_used;
-			bm.swap_max = my_swap_max;
-		    }
+			/* Before I calculate mem_used, I store MemFree in the mem_used
+			 * variable. The same with swap_used/SwapFree */
+			if (strcmp(name, "MemTotal:") == 0) mem_max = value;
+		    else if (strcmp(name, "Cached:") == 0) mem_cache = value;
+		    else if (strcmp(name, "Buffers:") == 0) mem_buffers = value;
+		    else if (strcmp(name, "MemFree:") == 0) mem_used = value;
+		    else if (strcmp(name, "SwapTotal:") == 0) swap_max = value;
+		    else if (strcmp(name, "SwapFree:") == 0) swap_used = value;
+		    else if (strcmp(name, "SwapCached:") == 0) swap_cache = value;
 		}
-	    }
+		fclose(mem);
+
+		mem_used = (mem_max - mem_used) + (swap_max - swap_used) -
+			(mem_cache + mem_buffers + swap_cache);
+		if (mem_used > mem_max) {
+			swap_used = mem_used - mem_max;
+			mem_used = mem_max;
+		} else {
+			swap_used = 0;
+		}
+
+		/* proc reports usage in kb, bm wants it in bytes. */
+		bm.mem_used  = 1024 * mem_used;
+		bm.mem_max   = 1024 * mem_max;
+		bm.swap_used = 1024 * swap_used;
+		bm.swap_max  = 1024 * swap_max;
+
+		return 1; /* update */
 	}
-	fclose(mem);
-	mem_delay = 25;
-#else
-	mem = fopen("/proc/meminfo", "r");
-	fgets(shit, 2048, mem);
-	
-	fscanf(mem, "%*s %Ld %Ld %Ld %Ld %Ld %Ld", &aa, &ab, &ac,
-	       &ad, &ae, &af);
-	fscanf(mem, "%*s %Ld %Ld", &ag, &ah);
-	fclose(mem);
-	mem_delay = 25;
-
-	/* calculate it */
-	my_mem_max = aa;	/* memory.total; */
-	my_swap_max = ag;	/* swap.total; */
-
-	my_mem_used = ah + ab - af - ae;	/* swap.used + memory.used - memory.cached - memory.buffer; */
-
-	if (my_mem_used > my_mem_max) {
-	    my_swap_used = my_mem_used - my_mem_max;
-	    my_mem_used = my_mem_max;
-	} else {
-	    my_swap_used = 0;
-	}
-
-	bm.mem_used = my_mem_used;
-	bm.mem_max = my_mem_max;
-	bm.swap_used = my_swap_used;
-	bm.swap_max = my_swap_max;
-#endif
-
-	/* memory info changed - update things */
-	return 1;
-    }
-    /* nothing new */
-    return 0;
+	return 0; /* nothing changed, don't update */
 }
 
 #ifdef ENABLE_MEMSCREEN

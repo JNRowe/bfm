@@ -1,0 +1,35 @@
+bfm (0.6.0-5) unstable; urgency=low
+
+  * Added missing copyright text to fishmon.c
+  * Corrected code used to keep fish in the water so that it actually works.
+
+ -- Huw Giddens <gidhu432@student.otago.ac.nz>  Tue, 28 Oct 2003 20:56:29 +1300
+
+bfm (0.6.0-4) unstable; urgency=low
+
+  * If can't open /proc/meminfo, proceed safely rather than over a cliff.
+  * Add comments to sys_linux.c re: changes I've made.
+
+ -- Huw Giddens <gidhu432@student.otago.ac.nz>  Mon, 27 Oct 2003 23:30:29 +1300
+
+bfm (0.6.0-3) unstable; urgency=low
+
+  * Add other recommends &c. to control file.
+
+ -- Huw Giddens <gidhu432@student.otago.ac.nz>  Mon, 27 Oct 2003 22:54:29 +1300
+
+bfm (0.6.0-2) unstable; urgency=low
+
+  * Added missing build deps to gkrellm-bfm.
+
+ -- Huw Giddens <gidhu432@student.otago.ac.nz>  Mon, 27 Oct 2003 22:50:29 +1300
+
+bfm (0.6.0-1) unstable; urgency=low
+
+  * Initial Release.
+  * Changed Makefile to make the gkrellm plugin by default.
+  * Changed the code in sys_linux.c that reads the memory info from
+    /proc/meminfo to code that works in 2.4 and 2.6.
+
+ -- Huw Giddens <gidhu432@student.otago.ac.nz>  Mon, 27 Oct 2003 21:39:29 +1300
+

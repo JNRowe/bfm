@@ -1,3 +1,23 @@
+/*  BubbleFishyMon dockapp 0.6.1
+ *  
+ *  This program is free software; you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation; either version 2 of the License, or
+ *  (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program; if not, write to the Free Software
+ *  Foundation, Inc., 59 Temple Street #330, Boston, MA 02111-1307, USA.
+ */
+/* Huw Giddens 2003-10-28: Added missing copyright boilerplate. Corrected the
+ *     calculation that keeps the fish in the water, and put it in its own
+ *     function adjust_y().
+ */
 #define _GNU_SOURCE
 #define VERSION "1.23"
 
@@ -50,7 +70,6 @@ void prepare_sprites(void);
 
 /* global variables */
 extern BubbleMonData bm;
-extern int real_waterlevel_max;
 extern int fish_traffic;
 extern int time_enabled;
 
@@ -226,10 +245,23 @@ void bubble_update(void)
     }
 }
 
+/* This function adjusts a passed y value so that it's not less than the 
+ * water level. 0 on the y axis is at the top of the frame. This is called by
+ * fish_update() and traffic_fish_update(). It returns the corrected value.
+ */
+static int adjust_y(int y)
+{
+	// Pigeon
+	// Make sure the fish is in the water :)
+	int min_y = (YMAX * (100 - bm.mem_percent))/100;
+
+	if(y <= min_y) return min_y;
+	else return y;
+}
+
 void fish_update(void)
 {
     int i, j;
-    int min_y;
 
     for (i = 0; i < NRFISH; i++) {
 
@@ -283,14 +315,7 @@ void fish_update(void)
 	    bm.fishes[i].y++;
 	}
 
-	// Pigeon
-	// Make sure the fish is in the water :)
-	min_y = real_waterlevel_max + 3;
-
-	if(bm.fishes[i].y <= min_y)
-	{
-	    bm.fishes[i].y = min_y;
-	}
+	bm.fishes[i].y = adjust_y(bm.fishes[i].y);
 
 	/* handle fish currently turning around */
 	if (bm.fishes[i].turn) {
@@ -613,7 +638,6 @@ void putpixel(int x, int y, float i, int linewidth, int color)
 void traffic_fish_update()
 {
     int i, j;
-    int min_y;
 
 	int rx_speed = net_rx_speed();
 	int tx_speed = net_tx_speed();
@@ -696,14 +720,7 @@ void traffic_fish_update()
 			bm.fishes[i].y++;
 		}
 
-		// Pigeon
-		// Make sure the fish is in the water :)
-		min_y = real_waterlevel_max + 3;
-
-		if(bm.fishes[i].y <= min_y)
-		{
-			bm.fishes[i].y = min_y;
-		}
+		bm.fishes[i].y = adjust_y(bm.fishes[i].y);
 
 		/* animate fishes using fish_animation array */
 		draw_sprite(bm.fishes[i].tx, bm.fishes[i].y,

@@ -14,7 +14,7 @@ EXTRA += -DENABLE_TIME
 # EXTRA += -DKDE_DOCKAPP
 
 # where to install this program
-PREFIX = /usr/local
+PREFIX ?= /usr/local
 
 # no user serviceable parts below
 EXTRA += $(WMAN)
@@ -134,6 +134,7 @@ clean_obj:
 clean:
 	rm -f bubblefishymon *.o *.bb* *.gcov gmon.* *.da *~ *.so
 
-install:
-	install $(INSTALL) $(BUBBLEFISHYMON) $(DESTDIR)$(PREFIX)/bin
-	install $(INSTALL_MAN) doc/bubblefishymon.1 $(DESTDIR)$(PREFIX)/man/man1
+install: 
+	install -d $(DESTDIR)/$(PREFIX)/bin $(DESTDIR)/$(PREFIX)/share/man/man1
+	install $(INSTALL) $(BUBBLEFISHYMON) $(DESTDIR)/$(PREFIX)/bin
+	install $(INSTALL_MAN) doc/bubblefishymon.1 $(DESTDIR)/$(PREFIX)/share/man/man1
