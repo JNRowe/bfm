@@ -86,8 +86,8 @@ endif
 
 # special things for OpenBSD
 ifeq ($(OS), OpenBSD)
+    SRCS += sys_openbsd.c
     OBJS += sys_openbsd.o
-    LIBS = `gtk-config --libs | sed "s/-lgtk//g"`
 endif
 
 #special things for SunOS
