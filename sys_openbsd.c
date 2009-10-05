@@ -127,4 +127,164 @@ void system_loadavg(void)
 }
 #endif				/* ENABLE_MEMSCREEN */
 
+#ifdef ENABLE_FISH
+
+#include <string.h>
+#include <ifaddrs.h>
+#include <sys/socket.h>
+#include <net/if.h>
+
+#define FISH_MAX_SPEED	8
+#define DIFF_MIN 10
+
+/* The actual speed for the fish... */
+int tx_speed;
+int rx_speed;
+
+u_int64_t tx_amount;
+u_int64_t rx_amount;
+
+/* Store the last one to compare */
+u_int64_t last_tx_amount;
+u_int64_t last_rx_amount;
+
+/* Store the max for scaling, too. */
+u_int64_t max_tx_diff = DIFF_MIN;
+u_int64_t max_rx_diff = DIFF_MIN;
+
+
+/* The cnt for scaling */
+int tx_cnt;
+int rx_cnt;
+int delay;
+
+extern int fish_traffic;
+void get_traffic(void);
+
+int net_tx_speed(void)
+{
+	get_traffic();
+	return tx_speed;
+}
+
+
+int net_rx_speed(void)
+{
+	get_traffic();
+	return rx_speed;
+}
+
+
+void get_traffic(void)
+{
+	struct ifaddrs *ifap, *ifa;
+	struct if_data *ifd;
+	u_int64_t diff;
+
+	/* Have some delay in updating/sampling traffic... */
+	if(delay++ < 5) {
+		return;
+	}
+	else {
+		delay = 0;
+	}
+
+	if (getifaddrs(&ifap) < 0)
+		return;
+
+	rx_amount = tx_amount = 0;
+	for (ifa = ifap; ifa; ifa = ifa->ifa_next) {
+		if (ifa->ifa_flags & IFF_UP) {
+			if (ifa->ifa_addr->sa_family != AF_LINK)
+				continue;
+			ifd = (struct if_data *)ifa->ifa_data;
+			/* ignore case */
+			if ((strncmp(ifa->ifa_name, "lo", 2) != 0) &&
+			    (strncmp(ifa->ifa_name, "pflog", 5) != 0)) {
+				rx_amount += ifd->ifi_ibytes;
+				tx_amount += ifd->ifi_obytes;
+			}
+		}
+	}
+	freeifaddrs(ifap);
+
+	/* Incoming traffic */
+	if (rx_amount != last_rx_amount) {
+		if (last_rx_amount == 0) {
+			last_rx_amount = rx_amount;
+		}
+		diff = rx_amount - last_rx_amount;
+		last_rx_amount = rx_amount;
+		rx_speed = FISH_MAX_SPEED * diff / max_rx_diff;
+		if(rx_speed == 0) {
+			/*
+			 * At least, make it move a bit, cos we know there's
+			 * traffic
+			 */
+			rx_speed = 1;
+		}
+		/*
+		  Do something to max rate, to do proper (hopefully)
+		  scaling
+		*/
+		if (max_rx_diff < diff) {
+			max_rx_diff = diff;
+		}
+		else {
+			/* Slowly lower the scale */
+			if(++rx_cnt > 5) {
+				max_rx_diff = diff;
+				if (max_rx_diff < DIFF_MIN) {
+					/* And don't scale it too low */
+					max_rx_diff = DIFF_MIN;
+				}
+				rx_cnt = 0;
+			}
+		}
+	}
+	else
+	{
+		rx_speed = 0;
+	}
+	/* Outgoing traffic */
+	if (tx_amount != last_tx_amount) {
+		if (last_tx_amount == 0) {
+			last_tx_amount = tx_amount;
+		}
+		diff = tx_amount - last_tx_amount;
+		last_tx_amount = tx_amount;
+		tx_speed= FISH_MAX_SPEED * diff / max_tx_diff;
+	if (tx_speed == 0) {
+		/*
+		 * At least, make it move a bit, cos we know there's
+		 * traffic
+		 */
+		tx_speed = 1;
+	}
+
+	/*
+	 * Do something to max rate, to do proper (hopefully)
+	 * scaling
+	 */
+	if (max_tx_diff < diff) {
+		max_tx_diff = diff;
+	}
+	else {
+		/* Slowly lower the scale */
+		if (++tx_cnt > 5) {
+			max_tx_diff = diff;
+			if (max_tx_diff < DIFF_MIN) {
+				/* And don't scale it too low */
+				max_tx_diff = DIFF_MIN;
+			}
+			tx_cnt = 0;
+		}
+	}
+	}
+	else {
+		tx_speed = 0;
+	}
+}
+#endif /* ENABLE_FISH */
+
 /* ex:set sw=4 ts=4: */
