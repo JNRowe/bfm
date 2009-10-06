@@ -86,20 +86,8 @@ int system_memory(void)
 
 	bm.mem_used = pagetob(uvmexp.active);
 	bm.mem_max = pagetob(uvmexp.npages);
-	bm.swap_used = 0;
-	bm.swap_max = 0;
-	if ((nswap = swapctl(SWAP_NSWAP, 0, 0)) != 0) {
-		struct swapent *swdev = malloc(nswap * sizeof(*swdev));
-		if((rnswap = swapctl(SWAP_STATS, swdev, nswap)) != nswap) {
-			for (i = 0; i < nswap; i++) {
-				if (swdev[i].se_flags & SWF_ENABLE) {
-					bm.swap_used += (swdev[i].se_inuse / (1024 / DEV_BSIZE));
-					bm.swap_max += (swdev[i].se_nblks / (1024 / DEV_BSIZE));
-				}
-			}
-		}
-		free(swdev);
-	}
+	bm.swap_used = pagetob(uvmexp.swpginuse);
+	bm.swap_max = pagetob(uvmexp.swpages);
 
 	return 1;
 }
