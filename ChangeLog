@@ -1,3 +1,11 @@
+2011-05-02 07:07  James Rowe <jnrowe@gmail.com>
+	* : Only strip binaries in install-strip target, this is hardly every
+		wanted/needed.
+	* : Added missing options to manual page.
+
+2011-05-01 02:08  Tom Samstag <tsamstag@clamps.(none)>
+	* : Fixing off-by-one index out of bounds
+
 2003-07-24 03:57  Peter Palfrader <weasel@debian.org>
 	* : Move setting hints a bit down, as suggested in wmfire's
 		bug report #250937 (closes: #251507). See
