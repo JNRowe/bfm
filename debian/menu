@@ -1,6 +1,0 @@
-?package(bubblefishymon):\
-  needs=X11\
-  section=Apps/System\
-  hints="Dockapp,System,Monitor"\
-  title="bubblefishymon"\
-  command="/usr/bin/bubblefishymon -n"
