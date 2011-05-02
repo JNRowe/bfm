@@ -55,8 +55,6 @@ GKRELLM_OBJS = gkrellm-bfm.o
 GKRELLM_BFM = gkrellm-bfm.so
 LDFLAGS = -shared -Wl
 
-STRIP = strip
-
 CC = gcc
 
 INSTALLMAN = -m 644
@@ -120,23 +118,19 @@ gkrellm: clean_obj
 	$(CC) -DGKRELLM2 -DGKRELLM_BFM -fPIC $(GTK2_CFLAGS) $(CFLAGS) -c $(SRCS) \
 		$(GKRELLM_SRCS)
 	$(CC) $(GTK2_LIBS) $(LDFLAGS) -o $(GKRELLM_BFM) $(OBJS) $(GKRELLM_OBJS)
-	$(STRIP) $(GKRELLM_BFM)
 
 gkrellm1: clean_obj
 	$(CC) -DGKRELLM_BFM -fPIC $(GTK_CFLAGS) $(CFLAGS) -c $(SRCS) \
 		$(GKRELLM_SRCS)
 	$(CC) $(GTK_LIBS) $(LDFLAGS) -o $(GKRELLM_BFM) $(OBJS) $(GKRELLM_OBJS)
-	$(STRIP) $(GKRELLM_BFM)
 
 bubblefishymon: clean_obj
 	$(CC) $(GTK2_CFLAGS) $(CFLAGS) -o $(BUBBLEFISHYMON) \
 		$(LIBS) $(GTK2_LIBS) $(SRCS)
-	$(STRIP) $(BUBBLEFISHYMON)
 
 bubblefishymon1: clean_obj
 	$(CC) $(GTK_CFLAGS) $(CFLAGS) -o $(BUBBLEFISHYMON) \
 		$(LIBS) $(GTK_LIBS) $(SRCS)
-	$(STRIP) $(BUBBLEFISHYMON)
 
 clean_obj:
 	rm -rf *.o
@@ -144,7 +138,10 @@ clean_obj:
 clean:
 	rm -f bubblefishymon *.o *.bb* *.gcov gmon.* *.da *~ *.so
 
-install: 
-	install -d $(DESTDIR)/$(PREFIX)/bin $(DESTDIR)/$(PREFIX)/share/man/man1
+install: install-man
 	install $(INSTALL) $(BUBBLEFISHYMON) $(DESTDIR)/$(PREFIX)/bin
+install-strip: install-man
+	install -s $(INSTALL) $(BUBBLEFISHYMON) $(DESTDIR)/$(PREFIX)/bin
+install-man:
+	install -d $(DESTDIR)/$(PREFIX)/bin $(DESTDIR)/$(PREFIX)/share/man/man1
 	install $(INSTALL_MAN) doc/bubblefishymon.1 $(DESTDIR)/$(PREFIX)/share/man/man1
